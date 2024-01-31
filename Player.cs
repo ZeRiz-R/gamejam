@@ -1,12 +1,11 @@
-﻿using Microsoft.Xna.Framework.Content;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -31,21 +30,23 @@ namespace CelesteLike
 {
     internal class Player : Sprite
     {
-        private float groundSpeed;
-        private float xSpeed;
-        private float ySpeed;
+        private float groundSpeed; // The main speed variable of the player
+        private float xSpeed; // The component of speed in the x axis
+        private float ySpeed; // The component of speed in the y axis
+        private float currentAngle; // The angle of the floor
 
-        private int playerWidth = 18;
-        private int playerHeight = 20;
+        private int playerWidth = 18; // Width of the player's collision box
+        private int playerHeight = 20; // Height of the player's collision box
 
-        private bool goLeft, goRight;
+        private bool goLeft, goRight; // Variables storing input
         private bool isCollide;
-        Collider collisionDetector;
+        Collider collisionDetector; // The collision detector for the player
+        Vector2 newPosition; // A variable that stores the player's new position to test for collisions before a move is made
 
         private const float grv = 0.219f;
 
 
-        private enum playerState
+        private enum playerState // Stores the state the player is currently in
         {
             grounded,
             airborne
@@ -55,8 +56,9 @@ namespace CelesteLike
 
         public Player(string newAssetName) : base(newAssetName)
         {
-            position = new Vector2(340, 224);
+            position = new Vector2(370, 210);
             collisionDetector = new Collider();
+            newPosition = position;
         }
 
         public override void LoadContent(ContentManager theContentManager)
@@ -67,56 +69,109 @@ namespace CelesteLike
 
         public override void Update()
         {
-            int distanceToTile;
-            UpdateInput();
-            UpdateMovement();
-            Vector2 newPosition = new Vector2(position.X, position.Y + ySpeed);
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, 0);
-            distanceToTile = collisionDetector.floorCollision();
-            Debug.WriteLine(distanceToTile);
+            float tempAngle;
+            float distanceToTile;
+
+            UpdateInput(); // Detects user inputs and updates variables accordingly
+            UpdateMovement(); // Deals with the inputs regarding movement
+
+            newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
+
+            //Sets up the sensors in the collision box
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
+
+            // Retrieves the distance to the closest surface (if any)
+            distanceToTile = collisionDetector.floorCollision(); // Gets the distance to the surface 
+            tempAngle = collisionDetector.getFinalAngle(); // Gets the angle of the new surface
+
+            // // An angle of 360 is flagged. This snaps the angle to the closest 90. Used to allow a full tile to be walked on from all sides
+            if (tempAngle == 360)
+            {
+                currentAngle = snapAngle(currentAngle);
+            }
+            else
+            {
+                currentAngle = tempAngle;
+            }
+
+            Debug.WriteLine(distanceToTile); // TEST CODE
 
             if (distanceToTile < 0 && distanceToTile >= -14) // If the player is within the terrain (within 14 pixels)
             {
-                newPosition.Y += distanceToTile;
+                // Add the distance in the appropriate direction.
+                AddDistance(distanceToTile, collisionDetector.Mode);
                 state = playerState.grounded;
             }
-            else if (distanceToTile >= 0 && distanceToTile <= 14)
+            else if (distanceToTile >= 0 && distanceToTile <= 14) // If the player is above the ground
             {
-                if (state == playerState.grounded) // If they are supposed to be on the floor
+                if (state == playerState.grounded) // If they are supposed to be on the floor, the add the distance
                 {
-                    newPosition.Y += distanceToTile;
+                    AddDistance(distanceToTile, collisionDetector.Mode);
                     state = playerState.grounded;
                 }
             }
-            else if (distanceToTile > 14)
+            else if (distanceToTile > 14) // If the player is far enough away from a tile, make them airborne
             {
                 state = playerState.airborne;
             }
 
-            position = newPosition;
+
+            position = newPosition; // Update the position to the corrected new position
 
             collisionDetector.Update(); // TESTING
 
             base.Update();
         }
 
+        // Draws the player in the correct position.
         public override void Draw(SpriteBatch theSpriteBatch)
         {
+            // Draws the player
             base.Draw(theSpriteBatch);
+
+            // Draws the collision box (if applied), as well as the variable display
             collisionDetector.Draw(theSpriteBatch);
+            VariableDisplay(theSpriteBatch, Game1.font);
         }
 
+        // Aligns the player with the tiles by adding the distance in the appropriate direction
+        private void AddDistance(float distance, Collider.collisionMode mode)
+        {
+            if (mode == Collider.collisionMode.floor)
+            {
+                newPosition.Y += distance;
+            }
+            else if (mode == Collider.collisionMode.rightWall)
+            {
+                newPosition.X += distance;
+            }
+            else if (mode == Collider.collisionMode.ceiling)
+            {
+                newPosition.Y -= distance;
+            }
+            else if (mode == Collider.collisionMode.leftWall)
+            {
+                newPosition.X -= distance;
+            }
+
+        }
+
+        // Retrieves keyboard inputs and translates them using boolean variables
         private void UpdateInput()
         {
             KeyboardState key = Keyboard.GetState();
 
             if (key.IsKeyDown(Keys.D)) // Right
             {
-                position.X += 5;
+                groundSpeed = 1f;
             }
             if (key.IsKeyDown(Keys.A)) // Left
             {
-                position.X += -5;
+                groundSpeed = -1f;
+            }
+            if (key.IsKeyUp(Keys.D) && key.IsKeyUp(Keys.A)) // Right
+            {
+                groundSpeed = 0;
             }
             if (key.IsKeyDown(Keys.S)) // Down
             {
@@ -125,26 +180,53 @@ namespace CelesteLike
             if (key.IsKeyDown(Keys.W)) // Up
             {
                 ySpeed = -7.5f;
+
+                // By moving the player up by 1, they can be detached from the floor collision
                 position.Y -= 1;
                 state = playerState.airborne;
             }
         }
 
+        // Calculates the x and y speeds based on the ground speed and angle
         private void UpdateMovement()
         {
+            // Converts the angle from degrees to radians
+            double radians = (Math.PI / 180) * currentAngle;
+
+            // Updates the x and y speed using trig values with the angle.
+            xSpeed = groundSpeed * (float)Math.Cos(radians);
+            if (state != playerState.airborne)
+            {
+                ySpeed = groundSpeed * -(float)Math.Sin(radians);
+            }
+
+            // Adds gravity to the player's y speed if they are in the air
             if (state == playerState.airborne)
             {
                 ySpeed += 0.357f;
             }
-            else
-            {
-                ySpeed = 0;
-            }
         }
 
-        private void UpdateCollision()
+        // Snaps the angle to the nearest 90 degrees.
+        private float snapAngle(float oldAngle)
         {
-            isCollide = false;
+            float newAngle = (float)Math.Round((double)(oldAngle / 90) % 4) * 90;
+            return newAngle;
+        }
+
+        // Draws text to the screen, allowing variables to be viewed in real time
+        private void VariableDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
+        {
+            float[] variableList = new float[] { position.X, position.Y, groundSpeed, xSpeed, ySpeed, currentAngle, (float)collisionDetector.Mode };
+            string[] variableNames = new string[] { "POSX: ", "POSY: ", "GSP: ", "XSP: ", "YSP: ", "ANG: ", "MODE: " };
+
+            Vector2 textPosition = new Vector2(32, 32);
+
+            for (int i = 0; i < variableNames.Length; i++)
+            {
+                theSpriteBatch.DrawString(font, variableNames[i] + variableList[i], textPosition, Color.White);
+                textPosition.Y += 32;
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,18 +21,22 @@ namespace CelesteLike
         private Sensor A, B, C, D, E, F; // The 6 sensors. A/B for floor. C/D for ceilings. E/F for walls.
         private List<Sensor> Sensors; // A list containing all of the sensors for easy access
         private Rectangle collisionBox; // The box used to position the sensors
+        private Sensor winningSensor;
+
         private int tileWidth = 16; // The width of each tile
         private int[,] tileMap;
         private int[,] heightArray;
+        private int[,] widthArray;
 
-        private enum collisionMode // Enum of possible collision modes (based on angle)
+        public enum collisionMode // Enum of possible collision modes (based on angle)
         {
             floor,
             rightWall,
             ceiling,
             leftWall
         }
-        private collisionMode mode;
+        private collisionMode mode; // Stores whether the player is on the floor/wall/ceiling
+        public collisionMode Mode { get { return mode; } }
 
         public Collider()
         {
@@ -45,6 +50,7 @@ namespace CelesteLike
 
             tileMap = Tiles.TileMap;
             heightArray = Tiles.HeightArray;
+            widthArray = Tiles.WidthArray;
         }
 
         // This method needs to be applied before any other ones are applied.
@@ -115,44 +121,106 @@ namespace CelesteLike
             }
         }
 
-        // Gets the distance from the object to the floor
-        public int floorCollision()
+        public float getFinalAngle()
         {
-            int finalDistance = 0;
+            if (winningSensor.TileID == 0) // If on a flat surface
+            {
+                if (mode == collisionMode.floor)
+                {
+                    return winningSensor.getAngleJustBelow(Sensor.Direction.down);
+                }
+                else if (mode == collisionMode.rightWall)
+                {
+                    return winningSensor.getAngleJustBelow(Sensor.Direction.right);
+                }
+                else if (mode == collisionMode.ceiling)
+                {
+                    return winningSensor.getAngleJustBelow(Sensor.Direction.up);
+                }
+                else if (mode == collisionMode.leftWall)
+                {
+                    return winningSensor.getAngleJustBelow(Sensor.Direction.left);
+                }
+            }
+            else
+            {
+                return winningSensor.angle;
+            }
+
+            return 0;
+        }
+
+        // Gets the distance from the object to the floor
+        public float floorCollision()
+        {
+            float finalDistance = 0;
 
             int[,] currentArray;
 
             if (mode == collisionMode.floor) // If running on floor
             {
                 currentArray = heightArray; // On the floor, so the height array will be used
-                A.tileHeight = floorSensorHeight(ref A, currentArray); // Gets the tileHeight of the tile at sensor A
-                B.tileHeight = floorSensorHeight(ref B, currentArray); // Gets the tileHeight of the tile at sensor B
+                A.tileHeight = floorSensorHeight(ref A, currentArray, Sensor.Direction.down); // Gets the tileHeight of the tile at sensor A
+                B.tileHeight = floorSensorHeight(ref B, currentArray, Sensor.Direction.down); // Gets the tileHeight of the tile at sensor B
 
                 A.distanceCalculator(Sensor.Direction.down);
                 B.distanceCalculator(Sensor.Direction.down);
             }
 
+            else if (mode == collisionMode.rightWall)
+            {
+                currentArray = widthArray;
+                A.tileHeight = floorSensorHeight(ref A, currentArray, Sensor.Direction.right);
+                B.tileHeight = floorSensorHeight(ref B, currentArray, Sensor.Direction.right);
+
+                A.distanceCalculator(Sensor.Direction.right);
+                B.distanceCalculator(Sensor.Direction.right);
+
+            }
+
+            else if (mode == collisionMode.ceiling) // If running on floor
+            {
+                currentArray = heightArray; // On the floor, so the height array will be used
+                A.tileHeight = floorSensorHeight(ref A, currentArray, Sensor.Direction.up); // Gets the tileHeight of the tile at sensor A
+                B.tileHeight = floorSensorHeight(ref B, currentArray, Sensor.Direction.up); // Gets the tileHeight of the tile at sensor B
+
+                A.distanceCalculator(Sensor.Direction.up);
+                B.distanceCalculator(Sensor.Direction.up);
+            }
+
+            else if (mode == collisionMode.leftWall)
+            {
+                currentArray = widthArray;
+                A.tileHeight = floorSensorHeight(ref A, currentArray, Sensor.Direction.left);
+                B.tileHeight = floorSensorHeight(ref B, currentArray, Sensor.Direction.left);
+
+                A.distanceCalculator(Sensor.Direction.left);
+                B.distanceCalculator(Sensor.Direction.left);
+            }    
+
             if (A.distance < B.distance) // If A is closer to the surface than B
             {
                 finalDistance = A.distance;
+                winningSensor = A;
             }
             else // If B is closer than A
             {
                 finalDistance = B.distance;
+                winningSensor = B;
             }
 
             return finalDistance;
         }
 
-        private int floorSensorHeight(ref Sensor sensor, int[,] currentArray)
+        private int floorSensorHeight(ref Sensor sensor, int[,] currentArray, Sensor.Direction direction)
         {
             int tileHeight1, tileHeight2;
 
-            tileHeight1 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray, Sensor.Direction.down); // Get the index of the tile from downward sensor
+            tileHeight1 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray, direction); // Get the index of the tile from downward sensor
             if (tileHeight1 == 0) // If the tile is empty, extend to check the next tile
             {
-                sensor.row += 1; //move the sensor down one row
-                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray, Sensor.Direction.down); // Gets the index of the tile below. (Usually the same, but flipped tiles have swapped indices)
+                sensor.Extend(direction); //move the sensor down one row/column
+                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray, direction); // Gets the index of the tile below. (Usually the same, but flipped tiles have swapped indices)
 
                 if (tileHeight2 != 0) // If the next tile is not empty (there is terrain), change the tileheight to the new one
                 {
@@ -161,12 +229,14 @@ namespace CelesteLike
             }
             else if (tileHeight1 == 16) // If the tile is full, regress to check the previous tile
             {
-                tileHeight2 = sensor.getTileHeight(sensor.row - 1, sensor.column, tileMap, currentArray, Sensor.Direction.down);
+                sensor.Regress(direction);
+                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray, direction);
+                sensor.Extend(direction); // Just moving the sensor back to where it belongs
 
                 if (tileHeight2 != 0) // If there is more terrain above, change the tileheight and row
                 {
                     tileHeight1 = tileHeight2;
-                    sensor.row -= 1;
+                    sensor.Regress(direction);
                 }
             }
 
@@ -198,7 +268,18 @@ namespace CelesteLike
                         x == box.Width - 1 ||// right side
                         y == box.Height - 1) // bottom side
                     {
-                        colours.Add(new Color(255, 255, 255, 255));
+                        if (Math.Abs(x - A.position.X) <= 5 || Math.Abs(y - A.position.Y) <= 5)
+                        {
+                            colours.Add(new Color(255, 0, 0, 255));
+                        }
+                        else if (Math.Abs(x - B.position.X) <= 16 || Math.Abs(y - B.position.Y) <= 16)
+                        {
+                            colours.Add(new Color(0, 255, 0, 255));
+                        }
+                        else
+                        {
+                            colours.Add(new Color(255, 255, 255, 255));
+                        }
                     }
                     else
                     {

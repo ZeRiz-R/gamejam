@@ -8,6 +8,7 @@ namespace CelesteLike
     {
         public static GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        public static SpriteFont font;
 
         private GameManager theGameManager; // Manages the game content
 
@@ -35,6 +36,7 @@ namespace CelesteLike
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            font = Content.Load<SpriteFont>("font");
 
             // TODO: use this.Content to load your game content here
             theGameManager.LoadContent(this.Content);
