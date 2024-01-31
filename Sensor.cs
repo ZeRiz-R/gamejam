@@ -30,9 +30,11 @@ namespace CelesteLike
             right
         }
 
+        public Direction direction;
+
 
         // Checks the tile the sensor is at and returns information about it
-        public int getTileHeight(int row, int column, int[,] tileMap, int[,] array, Sensor.Direction givenDirection)
+        public int getTileHeight(int row, int column, int[,] tileMap, int[,] array)
         {
             int tilePosition = 0; // Position of the top-left corner of the tile
             int tileIndex = 0; // Index of the tile that the player is at
@@ -41,7 +43,7 @@ namespace CelesteLike
             tileID = getTileType(row, column, tileMap);
 
             // If the sensor faces up or down, then the x-axis index is needed
-            if (givenDirection == Direction.down || givenDirection == Direction.up) 
+            if (direction == Direction.down || direction == Direction.up) 
             {
                 tilePosition = column * tileWidth; // Finds top left of tile
                 tileIndex = (int)position.X - tilePosition; // Finds difference in position (index)
@@ -63,7 +65,7 @@ namespace CelesteLike
             }
 
             // If the sensor is facing left or right, then the y-axis index is needed
-            else if (givenDirection == Direction.right || givenDirection == Direction.left) // Use y co-ordinates
+            else if (direction == Direction.right || direction == Direction.left) // Use y co-ordinates
             {
                 tilePosition = row * tileWidth; //Finds top-left of the tile
                 tileIndex = (int)position.Y - tilePosition; // Finds the index through the difference in position
@@ -88,7 +90,7 @@ namespace CelesteLike
 
         
         // Calculates the distance between the tile and the sensor
-        public void distanceCalculator(Direction direction)
+        public void distanceCalculator()
         {
             // A negative distance means object is overlapping (when sensing down/right)
             // A positive distance means the object is above the surface (when sensing down/right)
@@ -98,7 +100,7 @@ namespace CelesteLike
             // If the sensor is facing up or down, then the height is added vertically
             if (direction == Direction.down || direction == Direction.up) 
             {
-                if (vFlip) // If the tile has been flipped vertically, then the height grows from the top of the tile
+                if (vFlip || direction == Direction.up) // If the tile has been flipped vertically, then the height grows from the top of the tile
                 {
                     heightPositionTile = (row * tileWidth) + tileHeight;
                 }
@@ -119,7 +121,7 @@ namespace CelesteLike
             // If the sensor is facing left or right, then the height is added horizontally
             else if (direction == Direction.right || direction == Direction.left)
             {
-                if (hFlip) // If the tile has been flipped horizontally, then the tile grows from the left of the tile
+                if (hFlip || direction == Direction.left) // If the tile has been flipped horizontally, then the tile grows from the left of the tile
                 {
                     heightPositionTile = (column * tileWidth) + tileHeight;
                 }
@@ -128,11 +130,12 @@ namespace CelesteLike
                     heightPositionTile = (column + 1) * tileWidth - tileHeight; ;
                 }
 
-                distance = heightPositionTile - position.X; // Finds the difference between the tile and sensor
+                distance = heightPositionTile - position.X -1; // Finds the difference between the tile and sensor
 
                 // Negates the distance if sensing left, so that a collisions still returns a negative value
                 if (direction == Direction.left)
                 {
+                    distance += 2;
                     distance *= -1;
                 }
             }
@@ -203,7 +206,7 @@ namespace CelesteLike
         }
 
         // Extends the tile in the specified direction
-        public void Extend(Direction direction)
+        public void Extend()
         {
             if (direction == Direction.down)
             {
@@ -224,7 +227,7 @@ namespace CelesteLike
         }
 
         // Regresses the tile in the specified direction
-        public void Regress(Direction direction)
+        public void Regress()
         {
             if (direction == Direction.down)
             {
@@ -248,7 +251,7 @@ namespace CelesteLike
         // This has a use case for when the player is on completely flat ground.
         // Usually an angle of 0 (from an empty tile) is returned, which prevents
         // angle snapping. This allows angle snapping.
-        public float getAngleJustBelow(Direction direction)
+        public float getAngleJustBelow()
         {
             // Moves the sensor by 1 pixel in the specified direction
             if (direction == Direction.down)
@@ -271,7 +274,7 @@ namespace CelesteLike
             // Recalculates the row and column of the sensor
             row = (int)position.Y / tileWidth;
             column = (int)position.X / tileWidth;
-#
+
             // Retrieves the angle of this "new" tile
             angle = Tiles.AngleArray[getTileType(row, column, Tiles.TileMap)];
 
@@ -290,6 +293,18 @@ namespace CelesteLike
             }
 
             return angle;
+        }
+
+        public float groundNotCeilingCheck()
+        {
+            if (direction == Direction.up)
+            {
+                if (!vFlip && !(tileID == 0 || tileID == 1))
+                {
+                    return 0; // Make no distance
+                }
+            }
+            return distance;
         }
     }
 }

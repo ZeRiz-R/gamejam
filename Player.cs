@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -45,6 +46,8 @@ namespace CelesteLike
 
         private const float grv = 0.219f;
 
+        private float tempAngle;
+        private float distanceToTile;
 
         private enum playerState // Stores the state the player is currently in
         {
@@ -56,7 +59,7 @@ namespace CelesteLike
 
         public Player(string newAssetName) : base(newAssetName)
         {
-            position = new Vector2(370, 210);
+            position = new Vector2(327, 275);
             collisionDetector = new Collider();
             newPosition = position;
         }
@@ -69,17 +72,64 @@ namespace CelesteLike
 
         public override void Update()
         {
-            float tempAngle;
-            float distanceToTile;
 
             UpdateInput(); // Detects user inputs and updates variables accordingly
+            //groundSpeed = -2f;
             UpdateMovement(); // Deals with the inputs regarding movement
 
-            newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
+            float stepX = StepCollide(xSpeed);
+            float stepY = StepCollide(ySpeed);
+            bool temp;
 
-            //Sets up the sensors in the collision box
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
+            for (int i = 0; i < 5; i++)
+            {
+                newPosition = new Vector2(position.X + stepX, position.Y + stepY);
 
+                //Sets up the sensors in the collision box
+                collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
+
+                if (collisionDetector.Mode == Collider.collisionMode.floor || (currentAngle % 90 == 0))
+                {
+                    temp = WallCollide();
+                    if (temp) { stepX = 0; }
+                    
+                }
+
+                collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
+                if (state == playerState.grounded || ySpeed >= 0) // Ensures floor sensors only active when falling/on ground
+                {
+                    FloorCollide();
+                }
+
+                if (state == playerState.airborne)
+                {
+                    CeilingCollide();
+                    // MAYBE ADD LADNING ON CEILINGS
+                }
+
+                position = newPosition; // Update the position to the corrected new position
+            }
+
+            collisionDetector.Update(); // TESTING
+
+            base.Update();
+        }
+
+        private bool WallCollide()
+        {
+            distanceToTile = collisionDetector.wallCollision(groundSpeed);
+            if (distanceToTile <= 0 && distanceToTile >= -14) // If in the wall
+            {
+                AddDistance(distanceToTile, collisionDetector.getWallSensorDirection());
+                groundSpeed = 0;
+                xSpeed = 0;
+                return true;
+            }
+            return false;
+        }
+
+        private void FloorCollide()
+        {
             // Retrieves the distance to the closest surface (if any)
             distanceToTile = collisionDetector.floorCollision(); // Gets the distance to the surface 
             tempAngle = collisionDetector.getFinalAngle(); // Gets the angle of the new surface
@@ -94,33 +144,38 @@ namespace CelesteLike
                 currentAngle = tempAngle;
             }
 
-            Debug.WriteLine(distanceToTile); // TEST CODE
-
-            if (distanceToTile < 0 && distanceToTile >= -14) // If the player is within the terrain (within 14 pixels)
+            if (distanceToTile < 0 && distanceToTile >= -20) // If the player is within the terrain (within 14 pixels)
             {
                 // Add the distance in the appropriate direction.
-                AddDistance(distanceToTile, collisionDetector.Mode);
+                AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
                 state = playerState.grounded;
             }
             else if (distanceToTile >= 0 && distanceToTile <= 14) // If the player is above the ground
             {
-                if (state == playerState.grounded) // If they are supposed to be on the floor, the add the distance
+                if (state == playerState.grounded) // If the player is supposed to be on the ground
                 {
-                    AddDistance(distanceToTile, collisionDetector.Mode);
+                    AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
                     state = playerState.grounded;
                 }
             }
             else if (distanceToTile > 14) // If the player is far enough away from a tile, make them airborne
             {
                 state = playerState.airborne;
+                currentAngle = 0;
             }
+        }
 
+        private void CeilingCollide()
+        {
+            distanceToTile = collisionDetector.ceilingCollision();
+            //currentAngle = collisionDetector.getFinalAngle();
+            Debug.WriteLine(distanceToTile);
 
-            position = newPosition; // Update the position to the corrected new position
-
-            collisionDetector.Update(); // TESTING
-
-            base.Update();
+            if (distanceToTile < 0 && distanceToTile >= -14)
+            {
+                AddDistance(distanceToTile, Sensor.Direction.up);
+                ySpeed = 0;
+            }
         }
 
         // Draws the player in the correct position.
@@ -135,21 +190,21 @@ namespace CelesteLike
         }
 
         // Aligns the player with the tiles by adding the distance in the appropriate direction
-        private void AddDistance(float distance, Collider.collisionMode mode)
+        private void AddDistance(float distance, Sensor.Direction direction)
         {
-            if (mode == Collider.collisionMode.floor)
+            if (direction == Sensor.Direction.down)
             {
                 newPosition.Y += distance;
             }
-            else if (mode == Collider.collisionMode.rightWall)
+            else if (direction == Sensor.Direction.right)
             {
                 newPosition.X += distance;
             }
-            else if (mode == Collider.collisionMode.ceiling)
+            else if (direction == Sensor.Direction.up)
             {
                 newPosition.Y -= distance;
             }
-            else if (mode == Collider.collisionMode.leftWall)
+            else if (direction == Sensor.Direction.left)
             {
                 newPosition.X -= distance;
             }
@@ -163,11 +218,11 @@ namespace CelesteLike
 
             if (key.IsKeyDown(Keys.D)) // Right
             {
-                groundSpeed = 1f;
+                groundSpeed = 5f;
             }
             if (key.IsKeyDown(Keys.A)) // Left
             {
-                groundSpeed = -1f;
+                groundSpeed = -5f;
             }
             if (key.IsKeyUp(Keys.D) && key.IsKeyUp(Keys.A)) // Right
             {
@@ -179,10 +234,9 @@ namespace CelesteLike
             }
             if (key.IsKeyDown(Keys.W)) // Up
             {
-                ySpeed = -7.5f;
+                ySpeed = -6.5f;
 
                 // By moving the player up by 1, they can be detached from the floor collision
-                position.Y -= 1;
                 state = playerState.airborne;
             }
         }
@@ -205,6 +259,12 @@ namespace CelesteLike
             {
                 ySpeed += 0.357f;
             }
+        }
+
+        private float StepCollide(float speed)
+        {
+            int steps = 5;
+            return (speed / steps);
         }
 
         // Snaps the angle to the nearest 90 degrees.

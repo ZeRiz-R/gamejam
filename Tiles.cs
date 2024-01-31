@@ -64,20 +64,51 @@ namespace CelesteLike
                 for (int i = 0; i < split.Length; i++)
                 {
                     array[count, i] = Convert.ToInt32(split[i]);
-                    Debug.Write(array[count, i] + ",");
+                    //Debug.Write(array[count, i] + ",");
                 }
                 count += 1;
-                Debug.WriteLine("\n");
+                //Debug.WriteLine("\n");
             }
 
             return array;
+        }
+
+        private int[,] FillWidthArray(int[,] heightArray)
+        {
+            int[,] array = new int[heightArray.GetLength(0), heightArray.GetLength(1)];
+
+            for (int i = 0; i < array.GetLength(0); i++) // Iterate through each row
+            {
+                int currentHeight = tileWidth;
+                for (int j = 0; j < array.GetLength(1); j++) // Iterate across each column
+                {
+                    int count = 0;
+                    for (int k = tileWidth -1; k >= 0; k--) // Iterate across each index
+                    {
+                        if (heightArray[i, k] >= currentHeight)
+                        {
+                            count += 1;
+                        }
+                        else
+                        {
+                            k = -1;
+                            currentHeight -= 1;
+                        }
+                    }
+                    array[i, j] = count;
+                }
+            }
+
+            return array;
+
         }
         
         private void FillArrays(string tileMapName, string heightArrayName, string widthArrayName, string angleArrayName)
         {
             tileMap = ReadTo2DArray(tileMapName);
             heightArray = ReadTo2DArray(heightArrayName);
-            widthArray = ReadTo2DArray(widthArrayName);
+            //widthArray = ReadTo2DArray(widthArrayName);
+            widthArray = FillWidthArray(heightArray);
 
             string[] lines = File.ReadAllLines(angleArrayName);
 
@@ -88,7 +119,7 @@ namespace CelesteLike
             {
                 angleArray[count] = float.Parse(line);
                 count += 1;
-                Debug.WriteLine("\n");
+                //Debug.WriteLine("\n");
             }
         }
         public void Draw(SpriteBatch theSpriteBatch)
