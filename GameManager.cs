@@ -8,7 +8,7 @@ namespace CelesteLike
     internal class GameManager
     {
         private RenderTarget2D renderTarget;
-        private static int screenWidth = 640, screenHeight = 360;
+        private static int screenWidth = 480, screenHeight = 270;
 
         public static int ScreenWidth { get { return screenWidth; } }
         public static int ScreenHeight {  get { return screenHeight; } }
