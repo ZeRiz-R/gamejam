@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
@@ -56,7 +57,7 @@ namespace CelesteLike
         }
 
         // This method needs to be applied before any other ones are applied.
-        public void StartCollision(Vector2 objectPosition, int objectWidth, int objectHeight, float currentAngle)
+        public void StartCollision(Vector2 objectPosition, int objectWidth, int objectHeight, float currentAngle, bool AIRFLAG)
         {
             collisionBox = new Rectangle((int)objectPosition.X - (objectWidth / 2), (int)objectPosition.Y - (objectHeight / 2)
                 , objectWidth, objectHeight);
@@ -64,19 +65,19 @@ namespace CelesteLike
             // The ceiling sensors are only active whilst airborne, so do not change based on floor mode
             C.position = new Vector2(collisionBox.Left, collisionBox.Top);
             C.direction = Sensor.Direction.up;
-            D.position = new Vector2(collisionBox.Right, collisionBox.Bottom);
+            D.position = new Vector2(collisionBox.Right, collisionBox.Top); 
             D.direction = Sensor.Direction.up;
 
-            DetermineMode(currentAngle);
+            DetermineMode(currentAngle, AIRFLAG);
             setSensorPositions(objectPosition, objectWidth, objectHeight);
             RowsAndColumns();
 
         }
 
         // Calculates the collision mode of the player based on their angle.
-        private void DetermineMode(float currentAngle)
+        private void DetermineMode(float currentAngle, bool AIRFLAG)
         {
-            if ((0 <= currentAngle && currentAngle <= 45) || (315 < currentAngle && currentAngle <= 360)) // Floor mode
+            if ((0 <= currentAngle && currentAngle <= 45) || (315 <= currentAngle && currentAngle <= 360)) // Floor mode
             {
                 mode = collisionMode.floor;
             }
@@ -88,9 +89,14 @@ namespace CelesteLike
             {
                 mode = collisionMode.ceiling;
             }
-            else if (225 < currentAngle && currentAngle <= 315) // Left wall mode
+            else if (225 < currentAngle && currentAngle < 315) // Left wall mode
             {
                 mode = collisionMode.leftWall;
+            }
+
+            if (AIRFLAG) // Ensures that sensors dont accidentally move in air
+            {
+                mode = collisionMode.floor;
             }
         }
 
@@ -252,6 +258,7 @@ namespace CelesteLike
                 finalDistance = B.distance;
                 winningSensor = B;
             }
+            Debug.WriteLine("A: {0}\nB: {1}", A.distance, B.distance);
 
             return finalDistance;
         }
@@ -272,6 +279,7 @@ namespace CelesteLike
             {
                 return 100; // If not moving at all, return 0
             }
+
 
             if (mode == collisionMode.floor) // If running on floor
             {
@@ -303,6 +311,12 @@ namespace CelesteLike
                 activeSensor.distanceCalculator();
             }
 
+            // if (winningSensor.angle < 70 && winningSensor.angle > 290)
+            {
+               // activeSensor.distance = 0;
+            }
+            Debug.WriteLine("E/F: {0}", activeSensor.distance);
+
             return activeSensor.distance;
         }
 
@@ -316,6 +330,7 @@ namespace CelesteLike
 
             C.distanceCalculator();
             D.distanceCalculator();
+            Debug.WriteLine("C: {0}\nD: {1}", C.distance, D.distance);
 
             if (C.distance < D.distance) // If A is closer to the surface than B
             {
@@ -329,7 +344,7 @@ namespace CelesteLike
             }
            finalDistance = winningSensor.groundNotCeilingCheck();
 
-            return finalDistance;
+           return finalDistance;
         }
 
         private int floorSensorHeight(ref Sensor sensor, int[,] currentArray)
@@ -356,7 +371,10 @@ namespace CelesteLike
                 if (tileHeight2 != 0) // If there is more terrain above, change the tileheight and row
                 {
                     tileHeight1 = tileHeight2;
-                    sensor.Regress();
+                    if (sensor.direction != Sensor.Direction.up) // IDK why but it helps
+                    {
+                        sensor.Regress();
+                    }
                     if (sensor.angle == 360)
                     {
                         sensor.Regress();

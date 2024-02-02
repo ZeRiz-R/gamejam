@@ -7,6 +7,7 @@ namespace CelesteLike
     internal class Sprite
     {
         protected Vector2 position;
+        public Vector2 Position { get { return position; } }
         protected Texture2D spriteTexture;
         private string assetName;
 
@@ -14,10 +15,11 @@ namespace CelesteLike
         protected Vector2 speed;
 
         private Rectangle sourceRectangle;
+        public Rectangle SourceRectangle { get { return sourceRectangle; } }
         private float scale = 1.0f;
 
         private SpriteEffects effect;
-        private float rotation;
+        protected float rotation;
 
 
         public Sprite(string theAssetName)
@@ -41,7 +43,7 @@ namespace CelesteLike
 
         public virtual void Draw(SpriteBatch theSpriteBatch)
         {
-            theSpriteBatch.Draw(spriteTexture, position, sourceRectangle, Color.White, 0, origin, 1.0f, SpriteEffects.None, 0);
+            theSpriteBatch.Draw(spriteTexture, position, sourceRectangle, Color.White, rotation, origin, 1.0f, SpriteEffects.None, 0);
         }
     }
 }

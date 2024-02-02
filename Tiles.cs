@@ -31,8 +31,8 @@ namespace CelesteLike
 
         public Tiles()
         {
-            tileset = new Sprite("theRat");
-            FillArrays("TextFiles/testMap2.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
+            tileset = new Sprite("ratMouse3");
+            FillArrays("TextFiles/testMap3.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
                 "TextFiles/angleArray.txt");
         }
 

@@ -36,15 +36,18 @@ namespace CelesteLike
         private float ySpeed; // The component of speed in the y axis
         private float currentAngle; // The angle of the floor
 
-        private int playerWidth = 18; // Width of the player's collision box
-        private int playerHeight = 20; // Height of the player's collision box
+        private int playerWidth = 29; // Width of the player's collision box
+        private int playerHeight = 29; // Height of the player's collision box
 
-        private bool goLeft, goRight; // Variables storing input
+        private bool goLeft, goRight, tryJump; // Variables storing input
         private bool isCollide;
         Collider collisionDetector; // The collision detector for the player
+        private int controlLockTimer;
         Vector2 newPosition; // A variable that stores the player's new position to test for collisions before a move is made
 
-        private const float grv = 0.219f;
+        private const float ACC = 0.047f, DEC = 0.5f, FRC = 0.047f, TOP = 8f;
+        private const float GRV = 0.219f, AIR = 0.094f, JMP = 5.4f;
+        private const float normalSLOPE = 0.125f, rollUPSLOPE = 0.078f, rollDOWNSLOPE = 0.312f;
 
         private float tempAngle;
         private float distanceToTile;
@@ -55,11 +58,20 @@ namespace CelesteLike
             airborne
         }
 
+        private enum aerialDirection
+        {
+            mostlyRight,
+            mostlyLeft,
+            mostlyUp,
+            mostlyDown
+        }
+        private aerialDirection airDir;
+
         private playerState state = playerState.airborne;
 
         public Player(string newAssetName) : base(newAssetName)
         {
-            position = new Vector2(327, 275);
+            position = new Vector2(327, 100);
             collisionDetector = new Collider();
             newPosition = position;
         }
@@ -76,56 +88,63 @@ namespace CelesteLike
             UpdateInput(); // Detects user inputs and updates variables accordingly
             //groundSpeed = -2f;
             UpdateMovement(); // Deals with the inputs regarding movement
+            AngledSpeed();
+            UpdateJump();
+            SlipAndFall();
 
-            float stepX = StepCollide(xSpeed);
-            float stepY = StepCollide(ySpeed);
-            bool temp;
 
-            for (int i = 0; i < 5; i++)
+            newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
+            if (state == playerState.grounded)
             {
-                newPosition = new Vector2(position.X + stepX, position.Y + stepY);
-
-                //Sets up the sensors in the collision box
-                collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
-
-                if (collisionDetector.Mode == Collider.collisionMode.floor || (currentAngle % 90 == 0))
-                {
-                    temp = WallCollide();
-                    if (temp) { stepX = 0; }
-                    
-                }
-
-                collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle);
-                if (state == playerState.grounded || ySpeed >= 0) // Ensures floor sensors only active when falling/on ground
-                {
-                    FloorCollide();
-                }
-
-                if (state == playerState.airborne)
-                {
-                    CeilingCollide();
-                    // MAYBE ADD LADNING ON CEILINGS
-                }
-
-                position = newPosition; // Update the position to the corrected new position
+                groundedCollisions();
+            }
+            else if (state == playerState.airborne)
+            {
+                airborneCollisions();
             }
 
+
+            position = newPosition; // Update the position to the corrected new position
+
+
+            Animate();
             collisionDetector.Update(); // TESTING
 
             base.Update();
         }
 
-        private bool WallCollide()
+        private void groundedCollisions()
         {
-            distanceToTile = collisionDetector.wallCollision(groundSpeed);
+            //Sets up the sensors in the collision box
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
+
+            if (collisionDetector.Mode == Collider.collisionMode.floor || (currentAngle % 90 == 0))
+            {
+                WallCollide();
+
+            }
+
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
+            if (state == playerState.grounded) // Ensures floor sensors only active when falling/on ground
+            {
+                FloorCollide();
+            }
+        }
+
+        private void WallCollide()
+        {
+            float pSpeed;
+            if (state == playerState.grounded) 
+            { pSpeed = groundSpeed; }
+            else { pSpeed = xSpeed; }
+
+            distanceToTile = collisionDetector.wallCollision(pSpeed);
             if (distanceToTile <= 0 && distanceToTile >= -14) // If in the wall
             {
                 AddDistance(distanceToTile, collisionDetector.getWallSensorDirection());
                 groundSpeed = 0;
                 xSpeed = 0;
-                return true;
             }
-            return false;
         }
 
         private void FloorCollide()
@@ -144,18 +163,21 @@ namespace CelesteLike
                 currentAngle = tempAngle;
             }
 
-            if (distanceToTile < 0 && distanceToTile >= -20) // If the player is within the terrain (within 14 pixels)
+            if (distanceToTile < 0 && distanceToTile >= -14) // If the player is within the terrain (within 14 pixels)
             {
                 // Add the distance in the appropriate direction.
                 AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
-                state = playerState.grounded;
+                if (state != playerState.grounded) // If the player has just landed
+                {
+                    state = playerState.grounded;
+                    LandingSpeed();
+                }
             }
             else if (distanceToTile >= 0 && distanceToTile <= 14) // If the player is above the ground
             {
                 if (state == playerState.grounded) // If the player is supposed to be on the ground
                 {
                     AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
-                    state = playerState.grounded;
                 }
             }
             else if (distanceToTile > 14) // If the player is far enough away from a tile, make them airborne
@@ -165,18 +187,43 @@ namespace CelesteLike
             }
         }
 
+        private void airborneCollisions()
+        {
+            //Sets up the sensors in the collision box
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: true);
+
+            if (true) // The push sensors get free access at all times lol
+            {
+                WallCollide();
+            }
+
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
+            if (((airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft) && ySpeed >= 0) 
+                || airDir == aerialDirection.mostlyDown) // Ensures floor sensors only active when falling/on ground
+            {
+                FloorCollide();
+            }
+
+            if (airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft || airDir == aerialDirection.mostlyUp)
+            {
+                CeilingCollide();
+                // MAYBE ADD LADNING ON CEILINGS
+            }
+        }
+
         private void CeilingCollide()
         {
             distanceToTile = collisionDetector.ceilingCollision();
-            //currentAngle = collisionDetector.getFinalAngle();
-            Debug.WriteLine(distanceToTile);
+            float tempAngle = collisionDetector.getFinalAngle();
+            //Debug.WriteLine(distanceToTile);
 
-            if (distanceToTile < 0 && distanceToTile >= -14)
+            if (distanceToTile < 0 && distanceToTile >= -16)
             {
-                AddDistance(distanceToTile, Sensor.Direction.up);
-                ySpeed = 0;
+                newPosition.Y -= distanceToTile;
+                LandingCeilingSpeed(tempAngle);
             }
         }
+
 
         // Draws the player in the correct position.
         public override void Draw(SpriteBatch theSpriteBatch)
@@ -186,7 +233,7 @@ namespace CelesteLike
 
             // Draws the collision box (if applied), as well as the variable display
             collisionDetector.Draw(theSpriteBatch);
-            VariableDisplay(theSpriteBatch, Game1.font);
+            //VariableDisplay(theSpriteBatch, Game1.font);
         }
 
         // Aligns the player with the tiles by adding the distance in the appropriate direction
@@ -216,49 +263,352 @@ namespace CelesteLike
         {
             KeyboardState key = Keyboard.GetState();
 
-            if (key.IsKeyDown(Keys.D)) // Right
+            if (key.IsKeyDown(Keys.D) || key.IsKeyDown(Keys.Right))//D
             {
-                groundSpeed = 5f;
+                goRight = true;//increases to the right
             }
-            if (key.IsKeyDown(Keys.A)) // Left
+            if (key.IsKeyUp(Keys.D) && key.IsKeyUp(Keys.Right))//stops
             {
-                groundSpeed = -5f;
+                goRight = false;
             }
-            if (key.IsKeyUp(Keys.D) && key.IsKeyUp(Keys.A)) // Right
+            if (key.IsKeyDown(Keys.A) || key.IsKeyDown(Keys.Left))//A
             {
-                groundSpeed = 0;
+                goLeft = true;//moves to the left
             }
-            if (key.IsKeyDown(Keys.S)) // Down
+            if (key.IsKeyUp(Keys.A) && key.IsKeyUp(Keys.Left))
             {
-                position.Y += 5;
+                goLeft = false;//stops
             }
-            if (key.IsKeyDown(Keys.W)) // Up
+            //if the player is not already jumping or falling
+            if ((key.IsKeyDown(Keys.Space) || key.IsKeyDown(Keys.W)))
             {
-                ySpeed = -6.5f;
-
-                // By moving the player up by 1, they can be detached from the floor collision
-                state = playerState.airborne;
+                tryJump = true;
+            }
+            if ((key.IsKeyUp(Keys.Space) && key.IsKeyUp(Keys.W)))
+            {
+                tryJump = false;
+            }
+            if (key.IsKeyDown(Keys.O))//used for testing. Remove after finsihed.
+            {
+                position.Y -= 25;
+                //ySpeed = -5;
+                //KillPlayer();
             }
         }
 
         // Calculates the x and y speeds based on the ground speed and angle
         private void UpdateMovement()
         {
+            // If the player is grounded
+            if (state == playerState.grounded)
+            {
+                if (controlLockTimer == 0) // If the player has not slipped
+                {
+                    if (goRight) // If holding right
+                    {
+                        RightInput();
+                    }
+                    if (goLeft) // If holding left
+                    {
+                        LeftInput();
+                    }
+                    if (!goLeft && !goRight) // If not holding in either direction
+                    {
+                        NoInput();
+                    }
+                }
+                else
+                {
+                    if (!goLeft && !goRight) // If not holding in either direction
+                    {
+                        NoInput();
+                    }
+                }
+            }
+            else if (state == playerState.airborne)
+            {
+                AirInput();
+
+                // MAYBE ADD AIR DRAG
+                ySpeed += GRV; // Adds gravity to the player
+                if (ySpeed > 16) { ySpeed = 16; } // Prevents the player from falling through tiles
+            }
+
+            // Tracks the aerial direction of the player
+            if (state == playerState.airborne)
+            {
+                AerialDirectionCaclulator();
+            }
+        }
+
+        private void UpdateJump()
+        {
+            if (tryJump)
+            {
+                if (state != playerState.airborne)
+                {
+                    float radians = (float)(Math.PI / 180) * currentAngle;
+                    xSpeed -= JMP * (float)Math.Sin(radians);
+                    ySpeed -= JMP * (float)Math.Cos(radians);
+                    state = playerState.airborne;
+                }
+            }
+            //MAYBE VARIABLE JUMP/JUMP BUFFER/COYOTE TIME
+        }
+
+        private void RightInput()
+        { 
+            if (groundSpeed < 0) // If the player is moving left currently
+            {
+                groundSpeed += DEC; // Add deceleration
+                if (groundSpeed >= 0) // If the sign has swapped
+                {
+                    groundSpeed = 0.5f; // Set ground speed to 0.5.
+                }
+            }
+            else if (groundSpeed < TOP) // If the player is already moving right
+            {
+                groundSpeed += ACC; // Add acceleration
+                if (groundSpeed > TOP)
+                {
+                    groundSpeed = TOP; // Set the player with max speed
+                }
+            }
+        }
+
+        private void LeftInput()
+        {
+            if (groundSpeed > 0) // If the player is moving right currently
+            {
+                groundSpeed -= DEC; // Add deceleration
+                if (groundSpeed <= 0) // If the sign has swapped
+                {
+                    groundSpeed = -0.5f; // Set ground speed to -0.5.
+                }
+            }
+            else if (groundSpeed > -TOP) // If the player is already moving left
+            {
+                groundSpeed -= ACC; // Add acceleration
+                if (groundSpeed < -TOP)
+                {
+                    groundSpeed = -TOP; // Set the player with max speed
+                }
+            }
+        }
+
+        private void NoInput()
+        {
+            int sign = Math.Sign(groundSpeed); // Direction of travel
+            groundSpeed += -FRC * sign; // If speed is negative, FRC is added. If positive, FRC is subtracted
+            if (sign != Math.Sign(groundSpeed)) // If the sign swaps, then the player should stop moving
+            {
+                groundSpeed = 0;
+            }
+        }
+
+        private void AirInput()
+        {
+            if (goRight)
+            {
+                if (xSpeed < 0) // If the player is moving left currently
+                {
+                    xSpeed += AIR; // Add deceleration
+                    if (xSpeed >= 0) // If the sign has swapped
+                    {
+                        xSpeed = 0.5f; // Set ground speed to 0.5.
+                    }
+                }
+                else if (xSpeed < TOP) // If the player is already moving right
+                {
+                    xSpeed += AIR; // Add acceleration
+                    if (xSpeed > TOP)
+                    {
+                        xSpeed = TOP; // Set the player with max speed
+                    }
+                }
+            }
+            if (goLeft)
+            {
+                if (xSpeed > 0) // If the player is moving right currently
+                {
+                    xSpeed -= AIR; // Add deceleration
+                    if (xSpeed <= 0) // If the sign has swapped
+                    {
+                        xSpeed = -0.5f; // Set ground speed to -0.5.
+                    }
+                }
+                else if (xSpeed > -TOP) // If the player is already moving left
+                {
+                    xSpeed -= AIR; // Add acceleration
+                    if (xSpeed < -TOP)
+                    {
+                        xSpeed = -TOP; // Set the player with max speed
+                    }
+                }
+            }
+            groundSpeed = xSpeed;           
+        }
+
+        private void AerialDirectionCaclulator()
+        {
+            float degrees;
+            if (xSpeed != 0)
+            {
+                double radians = Math.Atan2((float)-ySpeed, (float)xSpeed);
+                degrees = ((float)(radians) * (float)(180 / Math.PI) + 360) % 360;
+            }
+            else
+            {
+                if (ySpeed > 0)
+                {
+                    degrees = 270;
+                }
+                else
+                {
+                    degrees = 90;
+                }
+            }
+            //Debug.WriteLine(degrees);
+
+            if ((0 <= degrees && degrees <= 45) || (315 < degrees && degrees <= 360))
+            {
+                airDir = aerialDirection.mostlyRight;
+            }
+            else if (45 < degrees && degrees <= 135)
+            {
+                airDir = aerialDirection.mostlyUp;
+            }
+            else if (135 < degrees && degrees <= 225)
+            {
+                airDir = aerialDirection.mostlyLeft;
+            }
+            else if (225 < degrees && degrees <= 315)
+            {
+                airDir = aerialDirection.mostlyDown;
+            }
+
+        }
+
+        private void AngledSpeed()
+        {
             // Converts the angle from degrees to radians
             double radians = (Math.PI / 180) * currentAngle;
 
-            // Updates the x and y speed using trig values with the angle.
-            xSpeed = groundSpeed * (float)Math.Cos(radians);
-            if (state != playerState.airborne)
+            //Subtract slope factor
+            groundSpeed -= normalSLOPE * (float)Math.Sin(radians);
+            if (collisionDetector.Mode == Collider.collisionMode.ceiling)
             {
+                groundSpeed -= normalSLOPE * 0.55f * Math.Sign(groundSpeed); ; // Ensures the player loses speed on ceilings
+            }
+            //IF ROLLING IS ADDED, ADD OTHER SLP FACTORS
+
+            // Updates the x and y speed using trig values with the angle.
+            if (state != playerState.airborne) // Only adjust ySpeed if grounded
+            {
+                xSpeed = groundSpeed * (float)Math.Cos(radians);
                 ySpeed = groundSpeed * -(float)Math.Sin(radians);
             }
 
-            // Adds gravity to the player's y speed if they are in the air
-            if (state == playerState.airborne)
+            if (Math.Abs(groundSpeed) < 0.001f)
             {
-                ySpeed += 0.357f;
+                groundSpeed = 0;
             }
+        }
+
+        // Sets the groundSpeed upon landing based on the x/y speed and angle of slope
+        private void LandingSpeed()
+        {
+            float radians = (float)(Math.PI / 180) * currentAngle;
+            if ((0 <= currentAngle && currentAngle <= 23) || 339 <= currentAngle && currentAngle <= 360) // Flat ground
+            {
+                groundSpeed = xSpeed; // Just continue with xSpeed
+            }
+            else if ((0 <= currentAngle && currentAngle <= 45) || ((315 <= currentAngle && currentAngle <= 360))) // Slight Slope
+            {
+                if (airDir == aerialDirection.mostlyLeft || airDir == aerialDirection.mostlyRight) // Already horizontal
+                {
+                    groundSpeed = xSpeed;
+                }
+                else
+                {
+                    // Speed is half the yspeed. Direction is based on angle.
+                    groundSpeed = ySpeed * 0.5f * -(float)(Math.Sign(Math.Sin(radians))); 
+                }
+            }
+            else // Steep Slope
+            {
+                if (airDir == aerialDirection.mostlyLeft || airDir == aerialDirection.mostlyRight) // Already horizontal
+                {
+                    groundSpeed = xSpeed;
+                }
+                else
+                {
+                    // Speed is the yspeed. Direction is based on angle.
+                    groundSpeed = ySpeed * -(float)(Math.Sign(Math.Sin(radians)));
+                }
+            }
+        }
+
+        // Allows the player to "attach" to ceilings if they are angled well enough from a jump
+        private void LandingCeilingSpeed(float nextAngle)
+        {
+            float radians = (float)(Math.PI / 180) * nextAngle;
+            if ((136 <= nextAngle && nextAngle <= 225) || nextAngle == 360) // Flat ceiling (or a full block)
+            {
+                ySpeed = 0;
+            }
+            else // Steep Slope
+            {
+                if (airDir == aerialDirection.mostlyUp) // (can land on it)
+                {
+                    state = playerState.grounded;
+                    // Speed is the yspeed. Direction is based on angle.
+                    groundSpeed = ySpeed * -(float)(Math.Sign(Math.Sin(radians)));
+                    currentAngle = nextAngle;
+                }
+                else
+                {
+                    ySpeed = 0;
+                }
+            }
+        }
+
+        private void SlipAndFall()
+        {
+            //Debug.WriteLine(controlLockTimer);
+            //if (state == playerState.grounded) // If the player is grounded
+            {
+                if (controlLockTimer == 0) // If the player has not been locked from movement
+                {
+                    // If the player is too slow up a steep slope
+                    if ((75 <= currentAngle && currentAngle <= 285) && Math.Abs(groundSpeed) <= 1.2f)
+                    {
+                        state = playerState.airborne; // Detach the player from the ground (make them fall)
+
+                        // Lock their controls for 30 frames
+                        controlLockTimer = 45;
+                        //xSpeed = 0;
+                        currentAngle = 0;
+                        groundSpeed = 0;
+                    }
+                }
+                else
+                {   // Reduce lock timer
+                    controlLockTimer -= 1;
+                }
+            }
+        }
+
+        private void Animate()
+        {
+            if (groundSpeed > 0)
+            {
+                rotation += 0.05f * groundSpeed;
+            }
+            else if (groundSpeed < 0)
+            {
+                rotation -= -0.05f * groundSpeed;
+            }    
         }
 
         private float StepCollide(float speed)
@@ -275,12 +625,12 @@ namespace CelesteLike
         }
 
         // Draws text to the screen, allowing variables to be viewed in real time
-        private void VariableDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
+        public void VariableDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
         {
-            float[] variableList = new float[] { position.X, position.Y, groundSpeed, xSpeed, ySpeed, currentAngle, (float)collisionDetector.Mode };
-            string[] variableNames = new string[] { "POSX: ", "POSY: ", "GSP: ", "XSP: ", "YSP: ", "ANG: ", "MODE: " };
+            float[] variableList = new float[] { position.X, position.Y, groundSpeed, xSpeed, ySpeed, currentAngle, (float)collisionDetector.Mode, (float)state };
+            string[] variableNames = new string[] { "POSX: ", "POSY: ", "GSP: ", "XSP: ", "YSP: ", "ANG: ", "MODE: ", "STATE: " };
 
-            Vector2 textPosition = new Vector2(32, 32);
+            Vector2 textPosition = new Vector2(0, 0);
 
             for (int i = 0; i < variableNames.Length; i++)
             {
