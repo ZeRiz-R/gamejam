@@ -11,6 +11,7 @@ namespace CelesteLike
         public static SpriteFont font;
 
         private GameManager theGameManager; // Manages the game content
+        private ScreenManager theScreenManager;
 
         public Game1()
         {
@@ -28,6 +29,8 @@ namespace CelesteLike
 
             theGameManager = new GameManager();
             theGameManager.Initialise();
+
+            //theScreenManager = new ScreenManager();
           
             _graphics.ApplyChanges();
             base.Initialize();
@@ -40,6 +43,7 @@ namespace CelesteLike
 
             // TODO: use this.Content to load your game content here
             theGameManager.LoadContent(this.Content);
+            //theScreenManager.LoadContent(this.Content);
         }
 
         protected override void Update(GameTime gameTime)
@@ -49,6 +53,7 @@ namespace CelesteLike
 
             // TODO: Add your update logic here
             theGameManager.Update(gameTime);
+            //theScreenManager.Update();
 
             base.Update(gameTime);
         }
@@ -61,9 +66,15 @@ namespace CelesteLike
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             theGameManager.Draw(_spriteBatch);
+            //theScreenManager.Draw(_spriteBatch);
 
 
             base.Draw(gameTime);
+        }
+
+        private void UpdateMouse()
+        {
+            
         }
     }
 }

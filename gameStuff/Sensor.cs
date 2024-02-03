@@ -43,13 +43,13 @@ namespace CelesteLike
             tileID = getTileType(row, column, tileMap);
 
             // If the sensor faces up or down, then the x-axis index is needed
-            if (direction == Direction.down || direction == Direction.up) 
+            if (direction == Direction.down || direction == Direction.up)
             {
                 tilePosition = column * tileWidth; // Finds top left of tile
                 tileIndex = (int)position.X - tilePosition; // Finds difference in position (index)
 
                 // If the tile has been flipped horizontally, then the index has also been flipped
-                if (hFlip) 
+                if (hFlip)
                 {
                     tileIndex = tileWidth - tileIndex - 1; // Finds the reverse index (15 - index)
                 }
@@ -88,7 +88,7 @@ namespace CelesteLike
             return tileHeight;
         }
 
-        
+
         // Calculates the distance between the tile and the sensor
         public void distanceCalculator()
         {
@@ -98,11 +98,11 @@ namespace CelesteLike
             int heightPositionTile = 0; // Position of the tile with the height of the tile added
 
             // If the sensor is facing up or down, then the height is added vertically
-            if (direction == Direction.down || direction == Direction.up) 
+            if (direction == Direction.down || direction == Direction.up)
             {
                 if (vFlip || direction == Direction.up) // If the tile has been flipped vertically, then the height grows from the top of the tile
                 {
-                    heightPositionTile = (row * tileWidth) + tileHeight;
+                    heightPositionTile = row * tileWidth + tileHeight;
                 }
                 else // If unflipped, then the tile grows from the bottom of the tile
                 {
@@ -123,14 +123,14 @@ namespace CelesteLike
             {
                 if (hFlip || direction == Direction.left) // If the tile has been flipped horizontally, then the tile grows from the left of the tile
                 {
-                    heightPositionTile = (column * tileWidth) + tileHeight;
+                    heightPositionTile = column * tileWidth + tileHeight;
                 }
                 else
                 {
                     heightPositionTile = (column + 1) * tileWidth - tileHeight; ;
                 }
 
-                distance = heightPositionTile - position.X -1; // Finds the difference between the tile and sensor
+                distance = heightPositionTile - position.X - 1; // Finds the difference between the tile and sensor
 
                 // Negates the distance if sensing left, so that a collisions still returns a negative value
                 if (direction == Direction.left)
@@ -170,7 +170,7 @@ namespace CelesteLike
             vFlip = false;
 
             // If the tile is negative or greater than (2^29), the tile has been flipped in some way
-            if (tileID < 0  || tileID > 536870912)
+            if (tileID < 0 || tileID > 536870912)
             {
                 string binary = Convert.ToString(tileID, 2).PadLeft(32, '0'); // Convert the value into a binary string
 
@@ -189,7 +189,7 @@ namespace CelesteLike
             angle = Tiles.AngleArray[tileID]; // Retrieves angle from the tilemap
 
             // Adjusts the angles for flipped tiles
-            if (hFlip && vFlip) 
+            if (hFlip && vFlip)
             {
                 angle = 180 + angle;
             }
@@ -276,7 +276,7 @@ namespace CelesteLike
             column = (int)position.X / tileWidth;
 
             // Retrieves the angle of this "new" tile
-            angle = Tiles.AngleArray[getTileType(row, column, Tiles.TileMap)];
+            angle = Tiles.AngleArray[getTileType(row, column, Tiles.TileMapL1)];
 
             // Adjusts the angles of any flipped tiles
             if (hFlip && vFlip)

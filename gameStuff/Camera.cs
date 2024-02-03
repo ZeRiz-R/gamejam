@@ -17,8 +17,8 @@ namespace CelesteLike
 
         public void Follow(Sprite target)
         {
-            var position = Matrix.CreateTranslation(-target.Position.X - (target.SourceRectangle.Width / 2),
-                -target.Position.Y - (target.SourceRectangle.Height / 2),
+            var position = Matrix.CreateTranslation(-target.Position.X - target.sourceRectangle.Width / 2,
+                -target.Position.Y - target.sourceRectangle.Height / 2,
                 0);
 
             var offset = Matrix.CreateTranslation(GameManager.ScreenWidth / 2, GameManager.ScreenHeight / 2, 0);
@@ -28,10 +28,10 @@ namespace CelesteLike
 
         public void Follow2(Sprite target)
         {
-            centre.X = Math.Min(Math.Max(centre.X, target.Position.X + (target.SourceRectangle.Width / 2) -180 - offsetX),
-                target.Position.X + (target.SourceRectangle.Width / 2) -180 + offsetX);
-            centre.Y = Math.Min(Math.Max(centre.Y, target.Position.Y + (target.SourceRectangle.Height / 2) - 225 -offsetY),
-                target.Position.Y + (target.SourceRectangle.Height / 2) - 225 + offsetX);
+            centre.X = Math.Min(Math.Max(centre.X, target.Position.X + target.sourceRectangle.Width / 2 - 240 - offsetX),
+                target.Position.X + target.sourceRectangle.Width / 2 - 180 + offsetX);
+            centre.Y = Math.Min(Math.Max(centre.Y, target.Position.Y + target.sourceRectangle.Height / 2 - 135 - offsetY),
+                target.Position.Y + target.sourceRectangle.Height / 2 - 225 + offsetX);
 
             Transform = Matrix.CreateScale(new Vector3(1, 1, 0)) * Matrix.CreateTranslation(new Vector3(-centre.X, -centre.Y, 0));
         }

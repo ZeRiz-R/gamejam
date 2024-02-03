@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
@@ -26,9 +27,9 @@ namespace CelesteLike
         private Sensor winningSensor;
 
         private int tileWidth = 16; // The width of each tile
-        private int[,] tileMap;
         private int[,] heightArray;
         private int[,] widthArray;
+        private int[,] activeTileMap;
 
         public enum collisionMode // Enum of possible collision modes (based on angle)
         {
@@ -51,21 +52,23 @@ namespace CelesteLike
             activeSensor = new Sensor();
             Sensors = new List<Sensor> { A, B, C, D, E, F }; // Creates a list of the sensors
 
-            tileMap = Tiles.TileMap;
+            activeTileMap = Tiles.TileMapL1;
             heightArray = Tiles.HeightArray;
             widthArray = Tiles.WidthArray;
         }
 
         // This method needs to be applied before any other ones are applied.
-        public void StartCollision(Vector2 objectPosition, int objectWidth, int objectHeight, float currentAngle, bool AIRFLAG)
+        public void StartCollision(Vector2 objectPosition, int objectWidth, int objectHeight, float currentAngle, bool AIRFLAG, Vector2 objectSpeed)
         {
-            collisionBox = new Rectangle((int)objectPosition.X - (objectWidth / 2), (int)objectPosition.Y - (objectHeight / 2)
+            collisionBox = new Rectangle((int)objectPosition.X - objectWidth / 2, (int)objectPosition.Y - objectHeight / 2
                 , objectWidth, objectHeight);
+
+            GetLayer(objectPosition, objectSpeed); // Finds the active tileMap
 
             // The ceiling sensors are only active whilst airborne, so do not change based on floor mode
             C.position = new Vector2(collisionBox.Left, collisionBox.Top);
             C.direction = Sensor.Direction.up;
-            D.position = new Vector2(collisionBox.Right, collisionBox.Top); 
+            D.position = new Vector2(collisionBox.Right, collisionBox.Top);
             D.direction = Sensor.Direction.up;
 
             DetermineMode(currentAngle, AIRFLAG);
@@ -77,7 +80,7 @@ namespace CelesteLike
         // Calculates the collision mode of the player based on their angle.
         private void DetermineMode(float currentAngle, bool AIRFLAG)
         {
-            if ((0 <= currentAngle && currentAngle <= 45) || (315 <= currentAngle && currentAngle <= 360)) // Floor mode
+            if (0 <= currentAngle && currentAngle <= 45 || 315 <= currentAngle && currentAngle <= 360) // Floor mode
             {
                 mode = collisionMode.floor;
             }
@@ -116,56 +119,56 @@ namespace CelesteLike
             if (mode == collisionMode.floor)
             {
                 // FLOOR SENSORS
-                A.position = new Vector2(objectPosition.X - (objectWidth / 2), objectPosition.Y + (objectHeight / 2));
-                B.position = new Vector2(objectPosition.X + (objectWidth / 2), objectPosition.Y + (objectHeight / 2));
+                A.position = new Vector2(objectPosition.X - objectWidth / 2, objectPosition.Y + objectHeight / 2);
+                B.position = new Vector2(objectPosition.X + objectWidth / 2, objectPosition.Y + objectHeight / 2);
                 A.direction = Sensor.Direction.down;
                 B.direction = Sensor.Direction.down;
 
                 // WALL SENSORS
-                E.position = new Vector2(objectPosition.X - (objectWidth / 2), objectPosition.Y);
-                F.position = new Vector2(objectPosition.X + (objectWidth / 2), objectPosition.Y);
+                E.position = new Vector2(objectPosition.X - objectWidth / 2, objectPosition.Y);
+                F.position = new Vector2(objectPosition.X + objectWidth / 2, objectPosition.Y);
                 E.direction = Sensor.Direction.left;
                 F.direction = Sensor.Direction.right;
             }
             else if (mode == collisionMode.rightWall)
             {
                 // FLOOR SENSORS
-                A.position = new Vector2(objectPosition.X + (objectHeight / 2), objectPosition.Y + (objectWidth / 2));
-                B.position = new Vector2(objectPosition.X + (objectHeight / 2), objectPosition.Y - (objectWidth / 2));
+                A.position = new Vector2(objectPosition.X + objectHeight / 2, objectPosition.Y + objectWidth / 2);
+                B.position = new Vector2(objectPosition.X + objectHeight / 2, objectPosition.Y - objectWidth / 2);
                 A.direction = Sensor.Direction.right;
                 B.direction = Sensor.Direction.right;
 
                 // WALL SENSORS
-                E.position = new Vector2(objectPosition.X, objectPosition.Y - (objectWidth / 2));
-                F.position = new Vector2(objectPosition.X, objectPosition.Y + (objectWidth / 2));
+                E.position = new Vector2(objectPosition.X, objectPosition.Y - objectWidth / 2);
+                F.position = new Vector2(objectPosition.X, objectPosition.Y + objectWidth / 2);
                 E.direction = Sensor.Direction.down;
                 F.direction = Sensor.Direction.up;
             }
             else if (mode == collisionMode.ceiling)
             {
                 // FLOOR SENSORS
-                A.position = new Vector2(objectPosition.X + (objectWidth / 2), objectPosition.Y - (objectHeight / 2));
-                B.position = new Vector2(objectPosition.X - (objectWidth / 2), objectPosition.Y - (objectHeight / 2));
+                A.position = new Vector2(objectPosition.X + objectWidth / 2, objectPosition.Y - objectHeight / 2);
+                B.position = new Vector2(objectPosition.X - objectWidth / 2, objectPosition.Y - objectHeight / 2);
                 A.direction = Sensor.Direction.up;
                 B.direction = Sensor.Direction.up;
 
                 // WALL SENSORS
-                E.position = new Vector2(objectPosition.X + (objectWidth / 2), objectPosition.Y);
-                F.position = new Vector2(objectPosition.X - (objectWidth / 2), objectPosition.Y);
+                E.position = new Vector2(objectPosition.X + objectWidth / 2, objectPosition.Y);
+                F.position = new Vector2(objectPosition.X - objectWidth / 2, objectPosition.Y);
                 E.direction = Sensor.Direction.right;
                 F.direction = Sensor.Direction.left;
             }
             else if (mode == collisionMode.leftWall)
             {
                 // FLOOR SENSORS
-                A.position = new Vector2(objectPosition.X - (objectHeight / 2), objectPosition.Y - (objectWidth / 2));
-                B.position = new Vector2(objectPosition.X - (objectHeight / 2), objectPosition.Y + (objectWidth / 2));
+                A.position = new Vector2(objectPosition.X - objectHeight / 2, objectPosition.Y - objectWidth / 2);
+                B.position = new Vector2(objectPosition.X - objectHeight / 2, objectPosition.Y + objectWidth / 2);
                 A.direction = Sensor.Direction.left;
                 B.direction = Sensor.Direction.left;
 
                 // WALL SENSORS
-                E.position = new Vector2(objectPosition.X, objectPosition.Y - (objectWidth / 2));
-                F.position = new Vector2(objectPosition.X, objectPosition.Y + (objectWidth / 2));
+                E.position = new Vector2(objectPosition.X, objectPosition.Y - objectWidth / 2);
+                F.position = new Vector2(objectPosition.X, objectPosition.Y + objectWidth / 2);
                 E.direction = Sensor.Direction.up;
                 F.direction = Sensor.Direction.down;
             }
@@ -246,7 +249,7 @@ namespace CelesteLike
 
                 A.distanceCalculator();
                 B.distanceCalculator();
-            }    
+            }
 
             if (A.distance < B.distance) // If A is closer to the surface than B
             {
@@ -313,7 +316,7 @@ namespace CelesteLike
 
             // if (winningSensor.angle < 70 && winningSensor.angle > 290)
             {
-               // activeSensor.distance = 0;
+                // activeSensor.distance = 0;
             }
             Debug.WriteLine("E/F: {0}", activeSensor.distance);
 
@@ -342,20 +345,20 @@ namespace CelesteLike
                 finalDistance = D.distance;
                 winningSensor = D;
             }
-           finalDistance = winningSensor.groundNotCeilingCheck();
+            finalDistance = winningSensor.groundNotCeilingCheck();
 
-           return finalDistance;
+            return finalDistance;
         }
 
         private int floorSensorHeight(ref Sensor sensor, int[,] currentArray)
         {
             int tileHeight1, tileHeight2;
 
-            tileHeight1 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray); // Get the index of the tile from downward sensor
+            tileHeight1 = sensor.getTileHeight(sensor.row, sensor.column, activeTileMap, currentArray); // Get the index of the tile from downward sensor
             if (tileHeight1 == 0) // If the tile is empty, extend to check the next tile
             {
                 sensor.Extend(); //move the sensor down one row/column
-                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray); // Gets the index of the tile below. (Usually the same, but flipped tiles have swapped indices)
+                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, activeTileMap, currentArray); // Gets the index of the tile below. (Usually the same, but flipped tiles have swapped indices)
 
                 if (tileHeight2 != 0) // If the next tile is not empty (there is terrain), change the tileheight to the new one
                 {
@@ -365,7 +368,7 @@ namespace CelesteLike
             else if (tileHeight1 == 16) // If the tile is full, regress to check the previous tile
             {
                 sensor.Regress();
-                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, tileMap, currentArray);
+                tileHeight2 = sensor.getTileHeight(sensor.row, sensor.column, activeTileMap, currentArray);
                 sensor.Extend(); // Just moving the sensor back to where it belongs
 
                 if (tileHeight2 != 0) // If there is more terrain above, change the tileheight and row
@@ -383,6 +386,37 @@ namespace CelesteLike
             }
 
             return tileHeight1;
+        }
+
+        private void GetLayer(Vector2 objectPosition, Vector2 objectSpeed)
+        {
+            int[,] layerMap = Tiles.TileMapLS;
+            int row = (int)(objectPosition.Y / tileWidth);
+            int column = (int)(objectPosition.X / tileWidth);
+
+            if (layerMap[row, column] == 1)
+            {
+                if (objectSpeed.X > 0)
+                {
+                    activeTileMap = Tiles.TileMapL1;
+                }
+                else if (objectSpeed.X < 0)
+                {
+                    activeTileMap = Tiles.TileMapL2;
+                }
+            }
+            else if (layerMap[row,column] == 2)
+            {
+                if (objectSpeed.Y > 0)
+                {
+                    activeTileMap = Tiles.TileMapL1;
+                }
+                else if (objectSpeed.Y < 0)
+                {
+                    activeTileMap = Tiles.TileMapL2;
+                }
+            }
+             
         }
 
         public Sensor.Direction getFloorSensorDirection()

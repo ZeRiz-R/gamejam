@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework;
 using System.Net.Security;
+using CelesteLike;
 
 namespace CelesteLike
 {
@@ -13,16 +14,22 @@ namespace CelesteLike
         public static int ScreenWidth { get { return screenWidth; } }
         public static int ScreenHeight {  get { return screenHeight; } }
 
+        private ObjectManager theObjectManager;
+
         private Player ball;
 
         private Tiles level;
 
         private Camera camera;
 
+        private Coin coin1 = new Coin(new Vector2(327, 100), 24, 16);
+
+
         public void Initialise()
         {
             level = new Tiles();
-            ball = new Player("earth2");
+            ball = new Player("earth2", Vector2.Zero, 30, 30);
+            theObjectManager = new ObjectManager();
         }
 
         public void LoadContent(ContentManager theContentManager)
@@ -31,14 +38,19 @@ namespace CelesteLike
                 DepthFormat.Depth24);
             camera = new Camera();
 
+            theObjectManager.LoadContent(theContentManager);
+            coin1.LoadContent(theContentManager);
+
             level.LoadContent(theContentManager);
             ball.LoadContent(theContentManager);
         }
 
         public void Update(GameTime theGameTime)
         {
+            theObjectManager.Update();
             ball.Update();
             camera.Follow2(ball);
+            coin1.Update(theGameTime);
         }
 
         private void DrawScenetoTexture(GraphicsDevice  graphicsDevice, SpriteBatch theSpriteBatch)
@@ -50,8 +62,11 @@ namespace CelesteLike
 
             //Draw here
             theSpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
-            level.Draw(theSpriteBatch);
+            level.DrawLayer1(theSpriteBatch);
+            theObjectManager.Draw(theSpriteBatch);
+            coin1.Draw(theSpriteBatch);
             ball.Draw(theSpriteBatch);
+            level.DrawLayer2(theSpriteBatch);
             theSpriteBatch.End();
 
             theSpriteBatch.Begin();

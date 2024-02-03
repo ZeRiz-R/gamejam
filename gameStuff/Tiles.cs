@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Content;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,26 +20,40 @@ namespace CelesteLike
             get { return tileWidth; }
         }
 
-        private static int[,] tileMap;
+        private static int[,] tileMapL1;
+        private static int[,] tileMapL2;
+        private static int[,] tileMapLS; // Layer Switcher
 
         // Allows other classes to access the tilemap
-        public static int[,] TileMap
+        public static int[,] TileMapL1
         {
-            get { return tileMap; }
+            get { return tileMapL1; }
+        }
+        public static int[,] TileMapL2
+        {
+            get { return tileMapL2; }
+        }
+        public static int[,] TileMapLS
+        {
+            get { return tileMapLS; }
         }
 
-        Sprite tileset;
+
+        Sprite layer1;
+        Sprite layer2;
 
         public Tiles()
         {
-            tileset = new Sprite("ratMouse3");
-            FillArrays("TextFiles/testMap3.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
+            layer1 = new Sprite("test4L1", Vector2.Zero, 0, 0);
+            layer2 = new Sprite("test4L2", Vector2.Zero, 0, 0);
+            FillArrays("TextFiles/test4_Layer1.csv", "TextFiles/test4_Layer2.csv", "TextFiles/test4_LayerSwitchers.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
                 "TextFiles/angleArray.txt");
         }
 
         public void LoadContent(ContentManager theContentManager)
         {
-            tileset.LoadContent(theContentManager);
+            layer1.LoadContent(theContentManager);
+            layer2.LoadContent(theContentManager);
         }
 
         private static int[,] heightArray;
@@ -64,6 +79,11 @@ namespace CelesteLike
                 for (int i = 0; i < split.Length; i++)
                 {
                     array[count, i] = Convert.ToInt32(split[i]);
+                    if (array[count, i] == -1)
+                    {
+                        array[count, i] = 0; // prevents empty spaces breaking the game
+                    }
+
                     //Debug.Write(array[count, i] + ",");
                 }
                 count += 1;
@@ -83,7 +103,7 @@ namespace CelesteLike
                 for (int j = 0; j < array.GetLength(1); j++) // Iterate across each column
                 {
                     int count = 0;
-                    for (int k = tileWidth -1; k >= 0; k--) // Iterate across each index
+                    for (int k = tileWidth - 1; k >= 0; k--) // Iterate across each index
                     {
                         if (heightArray[i, k] >= currentHeight)
                         {
@@ -100,14 +120,14 @@ namespace CelesteLike
             }
 
             return array;
-
         }
-        
-        private void FillArrays(string tileMapName, string heightArrayName, string widthArrayName, string angleArrayName)
+
+        private void FillArrays(string tileMapL1Name, string tileMapL2Name, string tileMapLSName, string heightArrayName, string widthArrayName, string angleArrayName)
         {
-            tileMap = ReadTo2DArray(tileMapName);
+            tileMapL1 = ReadTo2DArray(tileMapL1Name);
+            tileMapL2 = ReadTo2DArray(tileMapL2Name);
+            tileMapLS = ReadTo2DArray(tileMapLSName);
             heightArray = ReadTo2DArray(heightArrayName);
-            //widthArray = ReadTo2DArray(widthArrayName);
             widthArray = FillWidthArray(heightArray);
 
             string[] lines = File.ReadAllLines(angleArrayName);
@@ -122,9 +142,13 @@ namespace CelesteLike
                 //Debug.WriteLine("\n");
             }
         }
-        public void Draw(SpriteBatch theSpriteBatch)
+        public void DrawLayer1(SpriteBatch theSpriteBatch)
         {
-            tileset.Draw(theSpriteBatch);
+            layer1.Draw(theSpriteBatch);
+        }
+        public void DrawLayer2(SpriteBatch theSpriteBatch)
+        {
+            layer2.Draw(theSpriteBatch);
         }
     }
 }

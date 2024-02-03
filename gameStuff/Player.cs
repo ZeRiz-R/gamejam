@@ -41,12 +41,13 @@ namespace CelesteLike
 
         private bool goLeft, goRight, tryJump; // Variables storing input
         private bool isCollide;
+        private bool jumping;
         Collider collisionDetector; // The collision detector for the player
         private int controlLockTimer;
         Vector2 newPosition; // A variable that stores the player's new position to test for collisions before a move is made
 
         private const float ACC = 0.047f, DEC = 0.5f, FRC = 0.047f, TOP = 8f;
-        private const float GRV = 0.219f, AIR = 0.094f, JMP = 5.4f;
+        private const float GRV = 0.219f, AIR = 0.094f, JMP = 5.5f;
         private const float normalSLOPE = 0.125f, rollUPSLOPE = 0.078f, rollDOWNSLOPE = 0.312f;
 
         private float tempAngle;
@@ -69,9 +70,11 @@ namespace CelesteLike
 
         private playerState state = playerState.airborne;
 
-        public Player(string newAssetName) : base(newAssetName)
+        public Player(string newAssetName, Vector2 thePosition, int width, int height) : base(newAssetName, thePosition, width, height)
         {
             position = new Vector2(327, 100);
+            objectWidth = width;
+            objectHeight = height;
             collisionDetector = new Collider();
             newPosition = position;
         }
@@ -92,7 +95,7 @@ namespace CelesteLike
             UpdateJump();
             SlipAndFall();
 
-
+            speed = new Vector2(xSpeed, ySpeed);
             newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
             if (state == playerState.grounded)
             {
@@ -116,15 +119,15 @@ namespace CelesteLike
         private void groundedCollisions()
         {
             //Sets up the sensors in the collision box
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false, speed);
 
-            if (collisionDetector.Mode == Collider.collisionMode.floor || (currentAngle % 90 == 0))
+            if (collisionDetector.Mode == Collider.collisionMode.floor || currentAngle % 90 == 0)
             {
                 WallCollide();
 
             }
 
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false, speed);
             if (state == playerState.grounded) // Ensures floor sensors only active when falling/on ground
             {
                 FloorCollide();
@@ -134,7 +137,7 @@ namespace CelesteLike
         private void WallCollide()
         {
             float pSpeed;
-            if (state == playerState.grounded) 
+            if (state == playerState.grounded)
             { pSpeed = groundSpeed; }
             else { pSpeed = xSpeed; }
 
@@ -142,8 +145,18 @@ namespace CelesteLike
             if (distanceToTile <= 0 && distanceToTile >= -14) // If in the wall
             {
                 AddDistance(distanceToTile, collisionDetector.getWallSensorDirection());
-                groundSpeed = 0;
-                xSpeed = 0;
+
+                if (state == playerState.airborne) // Allows for bounciness with walls
+                {
+                    xSpeed *= -0.674f;
+                }
+                else
+                {
+                    groundSpeed *= -0.674f;
+                    //groundSpeed = 0;
+                    //xSpeed = 0;
+                }
+                controlLockTimer = 5;
             }
         }
 
@@ -190,15 +203,15 @@ namespace CelesteLike
         private void airborneCollisions()
         {
             //Sets up the sensors in the collision box
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: true);
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: true, speed);
 
             if (true) // The push sensors get free access at all times lol
             {
                 WallCollide();
             }
 
-            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false);
-            if (((airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft) && ySpeed >= 0) 
+            collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false, speed);
+            if ((airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft) && ySpeed >= 0
                 || airDir == aerialDirection.mostlyDown) // Ensures floor sensors only active when falling/on ground
             {
                 FloorCollide();
@@ -280,11 +293,11 @@ namespace CelesteLike
                 goLeft = false;//stops
             }
             //if the player is not already jumping or falling
-            if ((key.IsKeyDown(Keys.Space) || key.IsKeyDown(Keys.W)))
+            if (key.IsKeyDown(Keys.Space) || key.IsKeyDown(Keys.W))
             {
                 tryJump = true;
             }
-            if ((key.IsKeyUp(Keys.Space) && key.IsKeyUp(Keys.W)))
+            if (key.IsKeyUp(Keys.Space) && key.IsKeyUp(Keys.W))
             {
                 tryJump = false;
             }
@@ -351,13 +364,22 @@ namespace CelesteLike
                     xSpeed -= JMP * (float)Math.Sin(radians);
                     ySpeed -= JMP * (float)Math.Cos(radians);
                     state = playerState.airborne;
+                    jumping = true;
                 }
+            }
+            //else if (!tryJump && jumping && ySpeed < -3f) // Variable jump height SUBJECT TO CHANGE!!!
+            //{
+            //    ySpeed = -3f;
+            //}
+            else if (state == playerState.grounded)
+            {
+                jumping = false;
             }
             //MAYBE VARIABLE JUMP/JUMP BUFFER/COYOTE TIME
         }
 
         private void RightInput()
-        { 
+        {
             if (groundSpeed < 0) // If the player is moving left currently
             {
                 groundSpeed += DEC; // Add deceleration
@@ -446,7 +468,7 @@ namespace CelesteLike
                     }
                 }
             }
-            groundSpeed = xSpeed;           
+            groundSpeed = xSpeed;
         }
 
         private void AerialDirectionCaclulator()
@@ -454,8 +476,8 @@ namespace CelesteLike
             float degrees;
             if (xSpeed != 0)
             {
-                double radians = Math.Atan2((float)-ySpeed, (float)xSpeed);
-                degrees = ((float)(radians) * (float)(180 / Math.PI) + 360) % 360;
+                double radians = Math.Atan2((float)-ySpeed, xSpeed);
+                degrees = ((float)radians * (float)(180 / Math.PI) + 360) % 360;
             }
             else
             {
@@ -470,7 +492,7 @@ namespace CelesteLike
             }
             //Debug.WriteLine(degrees);
 
-            if ((0 <= degrees && degrees <= 45) || (315 < degrees && degrees <= 360))
+            if (0 <= degrees && degrees <= 45 || 315 < degrees && degrees <= 360)
             {
                 airDir = aerialDirection.mostlyRight;
             }
@@ -492,7 +514,7 @@ namespace CelesteLike
         private void AngledSpeed()
         {
             // Converts the angle from degrees to radians
-            double radians = (Math.PI / 180) * currentAngle;
+            double radians = Math.PI / 180 * currentAngle;
 
             //Subtract slope factor
             groundSpeed -= normalSLOPE * (float)Math.Sin(radians);
@@ -519,11 +541,11 @@ namespace CelesteLike
         private void LandingSpeed()
         {
             float radians = (float)(Math.PI / 180) * currentAngle;
-            if ((0 <= currentAngle && currentAngle <= 23) || 339 <= currentAngle && currentAngle <= 360) // Flat ground
+            if (0 <= currentAngle && currentAngle <= 23 || 339 <= currentAngle && currentAngle <= 360) // Flat ground
             {
                 groundSpeed = xSpeed; // Just continue with xSpeed
             }
-            else if ((0 <= currentAngle && currentAngle <= 45) || ((315 <= currentAngle && currentAngle <= 360))) // Slight Slope
+            else if (0 <= currentAngle && currentAngle <= 45 || 315 <= currentAngle && currentAngle <= 360) // Slight Slope
             {
                 if (airDir == aerialDirection.mostlyLeft || airDir == aerialDirection.mostlyRight) // Already horizontal
                 {
@@ -532,7 +554,7 @@ namespace CelesteLike
                 else
                 {
                     // Speed is half the yspeed. Direction is based on angle.
-                    groundSpeed = ySpeed * 0.5f * -(float)(Math.Sign(Math.Sin(radians))); 
+                    groundSpeed = ySpeed * 0.5f * -(float)Math.Sign(Math.Sin(radians));
                 }
             }
             else // Steep Slope
@@ -544,7 +566,7 @@ namespace CelesteLike
                 else
                 {
                     // Speed is the yspeed. Direction is based on angle.
-                    groundSpeed = ySpeed * -(float)(Math.Sign(Math.Sin(radians)));
+                    groundSpeed = ySpeed * -(float)Math.Sign(Math.Sin(radians));
                 }
             }
         }
@@ -553,7 +575,7 @@ namespace CelesteLike
         private void LandingCeilingSpeed(float nextAngle)
         {
             float radians = (float)(Math.PI / 180) * nextAngle;
-            if ((136 <= nextAngle && nextAngle <= 225) || nextAngle == 360) // Flat ceiling (or a full block)
+            if (136 <= nextAngle && nextAngle <= 225 || nextAngle == 360) // Flat ceiling (or a full block)
             {
                 ySpeed = 0;
             }
@@ -563,7 +585,7 @@ namespace CelesteLike
                 {
                     state = playerState.grounded;
                     // Speed is the yspeed. Direction is based on angle.
-                    groundSpeed = ySpeed * -(float)(Math.Sign(Math.Sin(radians)));
+                    groundSpeed = ySpeed * -(float)Math.Sign(Math.Sin(radians));
                     currentAngle = nextAngle;
                 }
                 else
@@ -581,7 +603,7 @@ namespace CelesteLike
                 if (controlLockTimer == 0) // If the player has not been locked from movement
                 {
                     // If the player is too slow up a steep slope
-                    if ((75 <= currentAngle && currentAngle <= 285) && Math.Abs(groundSpeed) <= 1.2f)
+                    if (75 <= currentAngle && currentAngle <= 285 && Math.Abs(groundSpeed) <= 2.5f)
                     {
                         state = playerState.airborne; // Detach the player from the ground (make them fall)
 
@@ -608,13 +630,13 @@ namespace CelesteLike
             else if (groundSpeed < 0)
             {
                 rotation -= -0.05f * groundSpeed;
-            }    
+            }
         }
 
         private float StepCollide(float speed)
         {
             int steps = 5;
-            return (speed / steps);
+            return speed / steps;
         }
 
         // Snaps the angle to the nearest 90 degrees.
