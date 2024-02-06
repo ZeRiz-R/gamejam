@@ -114,6 +114,7 @@ namespace CelesteLike
                 // Negates the distance if sensing up, so that a collision returns a negative distance too
                 if (direction == Direction.up)
                 {
+                    distance += 1;
                     distance *= -1;
                 }
             }

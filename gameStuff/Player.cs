@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Mime;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -39,9 +40,14 @@ namespace CelesteLike
         private int playerWidth = 29; // Width of the player's collision box
         private int playerHeight = 29; // Height of the player's collision box
 
-        private bool goLeft, goRight, tryJump; // Variables storing input
+        private bool goLeft, goRight, tryJump, tryFlame; // Variables storing input
         private bool isCollide;
         private bool jumping;
+
+        private bool hurt;
+        public bool dead { get; private set; }
+
+
         Collider collisionDetector; // The collision detector for the player
         private int controlLockTimer;
         Vector2 newPosition; // A variable that stores the player's new position to test for collisions before a move is made
@@ -49,15 +55,31 @@ namespace CelesteLike
         private const float ACC = 0.047f, DEC = 0.5f, FRC = 0.047f, TOP = 8f;
         private const float GRV = 0.219f, AIR = 0.094f, JMP = 5.5f;
         private const float normalSLOPE = 0.125f, rollUPSLOPE = 0.078f, rollDOWNSLOPE = 0.312f;
+        private const float BOUNCE = 0.674f;
+
+        private int numCoins = 0;
 
         private float tempAngle;
         private float distanceToTile;
+        private float effectTimer = 0; // Allows effects to last more than a frame
+
+        // SOUNDLOCKS
+        private bool hurtsoundLock = false;
 
         private enum playerState // Stores the state the player is currently in
         {
             grounded,
             airborne
         }
+
+        private enum SpecialState
+        {
+            hurt,
+            dead,
+            flaming,
+            none
+        }
+        private SpecialState specialState;
 
         private enum aerialDirection
         {
@@ -70,6 +92,9 @@ namespace CelesteLike
 
         private playerState state = playerState.airborne;
 
+        // VISUAL EFFECTS
+        VisualEffect explosion;
+
         public Player(string newAssetName, Vector2 thePosition, int width, int height) : base(newAssetName, thePosition, width, height)
         {
             position = new Vector2(327, 100);
@@ -77,43 +102,78 @@ namespace CelesteLike
             objectHeight = height;
             collisionDetector = new Collider();
             newPosition = position;
+
+            dead = false;
+            specialState = SpecialState.none;
+
+            explosion = new VisualEffect("bigExplosion", this.position, 40, 30, 66, 38);
         }
 
         public override void LoadContent(ContentManager theContentManager)
         {
             base.LoadContent(theContentManager);
             origin = new Vector2(spriteTexture.Width / 2, spriteTexture.Height / 2);
+
+            explosion.LoadContent(theContentManager);
         }
 
-        public override void Update()
+        float stepX, stepY;
+        public void Update(GameTime theGameTime)
         {
-
-            UpdateInput(); // Detects user inputs and updates variables accordingly
-            //groundSpeed = -2f;
-            UpdateMovement(); // Deals with the inputs regarding movement
-            AngledSpeed();
-            UpdateJump();
-            SlipAndFall();
-
-            speed = new Vector2(xSpeed, ySpeed);
-            newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
-            if (state == playerState.grounded)
+            if (!goalReached)
             {
-                groundedCollisions();
+                if (specialState != SpecialState.dead)
+                {
+                    if (specialState != SpecialState.hurt)
+                    {
+                        UpdateInput(); // Detects user inputs and updates variables accordingly
+                        //groundSpeed = -2f;
+                        UpdateMovement(); // Deals with the inputs regarding movement
+                        //UpdateFlame();
+                        AngledSpeed();
+                        UpdateJump();
+                        SlipAndFall();
+                    }
+                    else
+                    {
+                        UpdateHurt(theGameTime);
+                    }
+
+                    speed = new Vector2(xSpeed, ySpeed);
+                    stepX = stepSpeed(xSpeed);
+                    stepY = stepSpeed(ySpeed);
+
+                    // for (int i = 0; i < 3 ; i++)
+                    {
+                        newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
+                        if (state == playerState.grounded)
+                        {
+                            groundedCollisions();
+                        }
+                        else if (state == playerState.airborne)
+                        {
+                            airborneCollisions();
+                        }
+                        collisionBox = collisionDetector.GetCollisionBox();
+
+
+                        position = newPosition; // Update the position to the corrected new position
+                    }
+
+                }
+                else
+                {
+                    UpdateDeath(theGameTime);
+                }
+                Animate();
+
+                base.Update();
             }
-            else if (state == playerState.airborne)
-            {
-                airborneCollisions();
-            }
+        }
 
-
-            position = newPosition; // Update the position to the corrected new position
-
-
-            Animate();
-            collisionDetector.Update(); // TESTING
-
-            base.Update();
+        private float stepSpeed(float speed)
+        {
+            return speed / 3;
         }
 
         private void groundedCollisions()
@@ -142,17 +202,18 @@ namespace CelesteLike
             else { pSpeed = xSpeed; }
 
             distanceToTile = collisionDetector.wallCollision(pSpeed);
-            if (distanceToTile <= 0 && distanceToTile >= -14) // If in the wall
+            if (distanceToTile < 0 && distanceToTile >= -14) // If in the wall
             {
                 AddDistance(distanceToTile, collisionDetector.getWallSensorDirection());
 
-                if (state == playerState.airborne) // Allows for bounciness with walls
+                if (state == playerState.airborne && distanceToTile != 0) // Allows for bounciness with walls
                 {
-                    xSpeed *= -0.674f;
+                    xSpeed *= -BOUNCE;
+                    //xSpeed = 0;
                 }
                 else
                 {
-                    groundSpeed *= -0.674f;
+                    groundSpeed *= -BOUNCE;
                     //groundSpeed = 0;
                     //xSpeed = 0;
                 }
@@ -175,7 +236,8 @@ namespace CelesteLike
             {
                 currentAngle = tempAngle;
             }
-
+            
+            if (airDir == aerialDirection.mostlyDown || (ySpeed >= 0 || currentAngle != 0))
             if (distanceToTile < 0 && distanceToTile >= -14) // If the player is within the terrain (within 14 pixels)
             {
                 // Add the distance in the appropriate direction.
@@ -211,7 +273,7 @@ namespace CelesteLike
             }
 
             collisionDetector.StartCollision(newPosition, playerWidth, playerHeight, currentAngle, AIRFLAG: false, speed);
-            if ((airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft) && ySpeed >= 0
+            if ((airDir == aerialDirection.mostlyRight || airDir == aerialDirection.mostlyLeft)
                 || airDir == aerialDirection.mostlyDown) // Ensures floor sensors only active when falling/on ground
             {
                 FloorCollide();
@@ -243,6 +305,10 @@ namespace CelesteLike
         {
             // Draws the player
             base.Draw(theSpriteBatch);
+            if (!show && dead)
+            {
+                explosion.Draw(theSpriteBatch, position);
+            }
 
             // Draws the collision box (if applied), as well as the variable display
             collisionDetector.Draw(theSpriteBatch);
@@ -297,15 +363,28 @@ namespace CelesteLike
             {
                 tryJump = true;
             }
-            if (key.IsKeyUp(Keys.Space) && key.IsKeyUp(Keys.W))
+            if (key.IsKeyUp(Keys.W))
             {
                 tryJump = false;
+            }
+            if (key.IsKeyDown(Keys.Space))
+            {
+                tryFlame = true;
+            }
+            if (key.IsKeyUp(Keys.Space))
+            {
+                tryFlame = false;
             }
             if (key.IsKeyDown(Keys.O))//used for testing. Remove after finsihed.
             {
                 position.Y -= 25;
                 //ySpeed = -5;
                 //KillPlayer();
+            }
+            if (key.IsKeyDown(Keys.B))
+            {
+                //Debug.WriteLine("Breakpoint!!");
+                numCoins = 100;
             }
         }
 
@@ -360,6 +439,10 @@ namespace CelesteLike
             {
                 if (state != playerState.airborne)
                 {
+                    SoundBank.player_jump.PlayEndSound();
+                    colour = Color.Gold;
+                    effectTimer = 4;
+
                     float radians = (float)(Math.PI / 180) * currentAngle;
                     xSpeed -= JMP * (float)Math.Sin(radians);
                     ySpeed -= JMP * (float)Math.Cos(radians);
@@ -511,6 +594,67 @@ namespace CelesteLike
 
         }
 
+        private const float FLAMETOP = TOP + 2;
+        private void UpdateFlame()
+        {
+            if (tryFlame)
+            {
+                int direction;
+                if (numCoins > 20) // If there are enough coins to start flaming
+                {
+                    if (specialState == SpecialState.flaming) // If already flaming
+                    {
+                        if (state == playerState.airborne) // If in air
+                        {
+                            direction = Math.Sign(xSpeed);
+                            if (Math.Abs(xSpeed) < FLAMETOP)
+                            {
+                                xSpeed = (FLAMETOP) * direction;
+                            }
+                        }
+                        else
+                        {
+                            direction = Math.Sign(groundSpeed);
+                            if (Math.Abs(groundSpeed) < FLAMETOP)
+                            {
+                                groundSpeed = (FLAMETOP) * direction;
+                            }
+                        }
+                        numCoins -= 1;
+                    }
+                    else // If not yet flaming
+                    {
+                        if (state == playerState.airborne) // If in air
+                        {
+                            direction = Math.Sign(xSpeed);
+                            if (Math.Abs(xSpeed) < FLAMETOP)
+                            {
+                                xSpeed = (FLAMETOP) * direction;
+                            }
+                            if (ySpeed > -1)
+                            {
+                                ySpeed = -1;
+                            }
+                        }
+                        else
+                        {
+                            direction = Math.Sign(groundSpeed);
+                            if (Math.Abs(groundSpeed) < FLAMETOP)
+                            {
+                                groundSpeed = (FLAMETOP) * direction;
+                            }
+                        }
+                        numCoins -= 2;
+                    }
+                    specialState = SpecialState.flaming;
+                }
+                else
+                {
+                    specialState = SpecialState.none;
+                }
+            }
+        }
+
         private void AngledSpeed()
         {
             // Converts the angle from degrees to radians
@@ -578,6 +722,7 @@ namespace CelesteLike
             if (136 <= nextAngle && nextAngle <= 225 || nextAngle == 360) // Flat ceiling (or a full block)
             {
                 ySpeed = 0;
+                state = playerState.airborne;
             }
             else // Steep Slope
             {
@@ -591,6 +736,7 @@ namespace CelesteLike
                 else
                 {
                     ySpeed = 0;
+                    state = playerState.airborne;
                 }
             }
         }
@@ -623,6 +769,8 @@ namespace CelesteLike
 
         private void Animate()
         {
+            AnimateSetUp();
+
             if (groundSpeed > 0)
             {
                 rotation += 0.05f * groundSpeed;
@@ -630,6 +778,22 @@ namespace CelesteLike
             else if (groundSpeed < 0)
             {
                 rotation -= -0.05f * groundSpeed;
+            }
+        }
+
+        private void AnimateSetUp()
+        {
+            if (effectTimer == 0)
+            {
+                colour = Color.White;
+            }
+            else
+            {
+                effectTimer -= 1;
+                if (effectTimer <= 0)
+                {
+                    effectTimer = 0;
+                }
             }
         }
 
@@ -645,6 +809,143 @@ namespace CelesteLike
             float newAngle = (float)Math.Round((double)(oldAngle / 90) % 4) * 90;
             return newAngle;
         }
+        
+        // PLAYER OBJECT INTERACTION CODE
+        public void CollectCoin()
+        {
+            numCoins += 1;
+        }
+
+        public void Bump(int newSpeed, int direction)
+        {
+            if (direction == 0) // Up
+            {
+                ySpeed = -newSpeed;
+                state = playerState.airborne;
+            }
+            else if (direction == 1) // Right
+            {
+                xSpeed = newSpeed;
+            }
+        }
+
+        private bool goalReached = false;
+        public void GoalReached()
+        {
+            goalReached = true;
+            show = false;
+        }
+
+        public void GetHurt()
+        {
+            if (specialState != SpecialState.hurt && !dead) // prevents the player from being repeatedly hurt
+            {
+                if (numCoins == 0)
+                {
+                    KillPlayer();
+                }
+                else
+                {
+                    colour = Color.Red;
+                    effectTimer = 4;
+                    SoundBank.player_hurt.PlayEndSound();
+
+                    xSpeed = -3 * Math.Sign(groundSpeed);
+                    ySpeed = -3;
+                    state = playerState.airborne;
+                    specialState = SpecialState.hurt; // Prevents the player from controlling whilst hurt
+
+                    numCoins -= 15;
+                    if (numCoins <= 0)
+                    {
+                        numCoins = 0;
+                    }
+                }
+            }
+        }
+
+        private void UpdateHurt(GameTime theGameTime)
+        {
+            if (state == playerState.airborne)
+            {
+                ySpeed += GRV;
+                showNotShow(theGameTime);
+                AerialDirectionCaclulator();
+            }
+            else if (state == playerState.grounded)
+            {
+                show = true;
+                specialState = SpecialState.none;
+            }
+        }
+
+        public void KillPlayer()
+        {
+            dead = true;
+            specialState = SpecialState.dead;
+            ySpeed = -0.5f;
+            showThreshold = 30;
+            showTimer = 0;
+            show = false;
+
+            SoundBank.player_death.PlayEndSound();
+        }
+
+        private void UpdateDeath(GameTime theGameTime)
+        {
+            explosion.Animate(theGameTime);
+        }
+
+        public void Reset()
+        {
+            position = new Vector2(300, 100);
+            show = true;
+            dead = false;
+            specialState = SpecialState.none;
+            groundSpeed = 0;
+            xSpeed = 0;
+            ySpeed = 0;
+            currentAngle = 0;
+            numCoins = 0;
+            goalReached = false;
+
+            explosion.Reset();
+        }
+
+        public void CollideX(int distance)
+        {
+            position.X += distance;
+            if (state == playerState.grounded)
+            {
+                groundSpeed *= -BOUNCE;
+            }
+            else
+            {
+                xSpeed *= -BOUNCE;
+            }
+            controlLockTimer = 5;
+        }
+
+        public void CollideY(int distance)
+        {
+            position.Y += distance;
+            ySpeed = 0;
+            if (distance < 0) // If landing from top
+            {
+                state = playerState.grounded;
+            }
+        }
+
+        private float showTimer = 0, showThreshold = 30;
+        private void showNotShow(GameTime theGameTime)
+        {
+            if (showTimer > showThreshold)
+            {
+                show = !show;
+                showTimer = 0;
+            }
+            showTimer += (float)theGameTime.ElapsedGameTime.TotalMilliseconds;
+        }
 
         // Draws text to the screen, allowing variables to be viewed in real time
         public void VariableDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
@@ -653,6 +954,20 @@ namespace CelesteLike
             string[] variableNames = new string[] { "POSX: ", "POSY: ", "GSP: ", "XSP: ", "YSP: ", "ANG: ", "MODE: ", "STATE: " };
 
             Vector2 textPosition = new Vector2(0, 0);
+
+            for (int i = 0; i < variableNames.Length; i++)
+            {
+                theSpriteBatch.DrawString(font, variableNames[i] + variableList[i], textPosition, Color.White);
+                textPosition.Y += 32;
+            }
+        }
+
+        public void UIDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
+        {
+            float[] variableList = new float[] { numCoins };
+            string[] variableNames = new string[] { "Ozone: " };
+
+            Vector2 textPosition = new Vector2(380, 0);
 
             for (int i = 0; i < variableNames.Length; i++)
             {

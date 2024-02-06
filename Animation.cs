@@ -16,14 +16,16 @@ namespace CelesteLike
         public float frameSpeed { get; set; }
         public int frameWidth { get { return texture.Width / frameCount; } }
         public bool isLooping { get; set; }
+        public bool finished {  get; set; }
         public Texture2D texture { get; private set; }
 
-        public Animation(Texture2D texture, int frameCount, float frameSpeed)
+        public Animation(Texture2D texture, int frameCount, float frameSpeed, bool looping)
         {
             this.texture = texture;
             this.frameCount = frameCount;
-            isLooping = true;
+            isLooping = looping;
             this.frameSpeed = frameSpeed;
+            finished = false;
         }
     }
 }

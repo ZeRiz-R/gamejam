@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework;
 using System.Net.Security;
 using CelesteLike;
+using CelesteLike.gameStuff;
+using System.Threading;
 
 namespace CelesteLike
 {
@@ -22,9 +24,17 @@ namespace CelesteLike
 
         private Camera camera;
 
-        private Coin coin1 = new Coin(new Vector2(327, 100), 24, 16);
+        // TESTS
+        private Sprite bg = new Sprite("purpleNebula6", new Vector2(0, 0), 512, 512);
 
+        private Coin coin1 = new Coin(new Vector2(400, 100));
+        private Bumper bumper = new Bumper(new Vector2(400, 200), 0, 10);
+        private Spikes spike = new Spikes(new Vector2(240, 150));
+        private Goal goal = new Goal(new Vector2(800, 400));
 
+        public bool levelComplete { get; private set; }
+
+        private float DeathTimer = 0;
         public void Initialise()
         {
             level = new Tiles();
@@ -39,7 +49,14 @@ namespace CelesteLike
             camera = new Camera();
 
             theObjectManager.LoadContent(theContentManager);
+            //TESTS
             coin1.LoadContent(theContentManager);
+            bumper.LoadContent(theContentManager);
+            spike.LoadContent(theContentManager);
+            goal.LoadContent(theContentManager);
+            bg.LoadContent(theContentManager);
+            bg.scale = 1.0f;
+            //TESTS
 
             level.LoadContent(theContentManager);
             ball.LoadContent(theContentManager);
@@ -47,10 +64,18 @@ namespace CelesteLike
 
         public void Update(GameTime theGameTime)
         {
-            theObjectManager.Update();
-            ball.Update();
+            theObjectManager.Update(theGameTime, ball);
+            ball.Update(theGameTime);
             camera.Follow2(ball);
-            coin1.Update(theGameTime);
+            //TEST
+            bumper.Update(theGameTime, ball);
+            coin1.Update(theGameTime, ball);
+            spike.Update(ball);
+            goal.Update(theGameTime, ball);
+
+            LevelCompleteCheck();
+
+            UpdatePlayerDeath(theGameTime);
         }
 
         private void DrawScenetoTexture(GraphicsDevice  graphicsDevice, SpriteBatch theSpriteBatch)
@@ -62,15 +87,20 @@ namespace CelesteLike
 
             //Draw here
             theSpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
+            bg.Draw(theSpriteBatch);
             level.DrawLayer1(theSpriteBatch);
             theObjectManager.Draw(theSpriteBatch);
             coin1.Draw(theSpriteBatch);
+            bumper.Draw(theSpriteBatch);
+            spike.Draw(theSpriteBatch);
+            goal.Draw(theSpriteBatch);
             ball.Draw(theSpriteBatch);
             level.DrawLayer2(theSpriteBatch);
             theSpriteBatch.End();
 
             theSpriteBatch.Begin();
             ball.VariableDisplay(theSpriteBatch, Game1.font);
+            ball.UIDisplay(theSpriteBatch, Game1.font);
             theSpriteBatch.End();
 
 
@@ -86,6 +116,40 @@ namespace CelesteLike
                 DepthStencilState.Default, RasterizerState.CullNone);
             theSpriteBatch.Draw(renderTarget, new Rectangle(0, 0, 1920, 1080), Color.White);
             theSpriteBatch.End();
+        }
+
+        public void LevelCompleteCheck()
+        {
+            if (goal.levelComplete == true)
+            {
+                this.levelComplete = true;
+            }
+        }
+
+
+        private void UpdatePlayerDeath(GameTime theGameTime)
+        {
+            if (ball.dead == true)
+            {
+                DeathTimer += (float)theGameTime.ElapsedGameTime.TotalSeconds;
+
+                if (DeathTimer > 1)
+                {
+                    ball.Reset();
+                    theObjectManager.Reset();
+                    DeathTimer = 0;
+                }
+
+            }
+        }
+
+        public void Reset()
+        {
+            ball.Reset();
+            theObjectManager.Reset();
+            goal.Reset();
+            levelComplete = false;
+            DeathTimer = 0;
         }
     }
 }

@@ -9,8 +9,12 @@ namespace CelesteLike
         public static GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         public static SpriteFont font;
+        public static int screenWidth = 480, screenHeight = 270;
 
-        private GameManager theGameManager; // Manages the game content
+        public static Rectangle mousePosition, mouseClick;
+        private MouseState mouseState, prevMouseState;
+
+        //private GameManager theGameManager; // Manages the game content
         private ScreenManager theScreenManager;
 
         public Game1()
@@ -25,10 +29,13 @@ namespace CelesteLike
             // TODO: Add your initialization logic here
             _graphics.PreferredBackBufferWidth = 1920;
             _graphics.PreferredBackBufferHeight = 1080;
+            mouseState = Mouse.GetState();
+            prevMouseState = mouseState;
             //_graphics.IsFullScreen = true;
 
-            theGameManager = new GameManager();
-            theGameManager.Initialise();
+            //theGameManager = new GameManager();
+            //theGameManager.Initialise();
+            theScreenManager = new ScreenManager();
 
             //theScreenManager = new ScreenManager();
           
@@ -42,8 +49,10 @@ namespace CelesteLike
             font = Content.Load<SpriteFont>("font");
 
             // TODO: use this.Content to load your game content here
-            theGameManager.LoadContent(this.Content);
-            //theScreenManager.LoadContent(this.Content);
+            //theGameManager.LoadContent(this.Content);
+            theScreenManager.LoadContent(this.Content);
+            MusicBank.LoadContent(this.Content);
+            SoundBank.LoadContent(this.Content);
         }
 
         protected override void Update(GameTime gameTime)
@@ -51,9 +60,11 @@ namespace CelesteLike
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            UpdateMouse();
+
             // TODO: Add your update logic here
-            theGameManager.Update(gameTime);
-            //theScreenManager.Update();
+            //theGameManager.Update(gameTime);
+            theScreenManager.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -63,10 +74,12 @@ namespace CelesteLike
 
             // TODO: Add your drawing code here
 
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            //GraphicsDevice.Clear(Color.FloralWhite);
 
-            theGameManager.Draw(_spriteBatch);
-            //theScreenManager.Draw(_spriteBatch);
+            //theGameManager.Draw(_spriteBatch);
+            //_spriteBatch.Begin();
+            theScreenManager.Draw(_spriteBatch);
+            //_spriteBatch.End();
 
 
             base.Draw(gameTime);
@@ -74,7 +87,16 @@ namespace CelesteLike
 
         private void UpdateMouse()
         {
-            
+            mouseClick = new Rectangle(0, 0, 0, 0); // Resets the mouse click
+            mouseState = Mouse.GetState();
+            mousePosition = new Rectangle(mouseState.X / 4, mouseState.Y / 4, 1, 1);
+
+            // If the mouse has just been clicked
+            if (prevMouseState.LeftButton == ButtonState.Pressed && mouseState.LeftButton == ButtonState.Released)
+            {
+                mouseClick = mousePosition;
+            }
+            prevMouseState = mouseState;
         }
     }
 }

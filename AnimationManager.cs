@@ -28,6 +28,7 @@ namespace CelesteLike
 
             animation = theAnimation;
             animation.currentFrame = 0;
+            origin = new Vector2(animation.frameWidth / 2, animation.frameHeight / 2);
             timer = 0;
         }
 
@@ -41,7 +42,7 @@ namespace CelesteLike
         {
             timer += (float)theGameTime.ElapsedGameTime.TotalSeconds;
 
-            if (timer > animation.frameSpeed)
+            if (timer > animation.frameSpeed && !animation.finished)
             {
                 timer = 0;
                 animation.currentFrame += 1;
@@ -49,6 +50,10 @@ namespace CelesteLike
                 if (animation.currentFrame >= animation.frameCount)
                 {
                     animation.currentFrame = 0;
+                    if (animation.isLooping == false)
+                    {
+                        animation.finished = true;
+                    }
                 }
             }
         }

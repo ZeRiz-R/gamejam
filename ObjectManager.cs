@@ -12,7 +12,7 @@ namespace CelesteLike
 {
     internal class ObjectManager
     {
-        private List<LayerSwitcher> layerSwitchers;
+        private List<Coin> coins;
         public ObjectManager()
         {
 
@@ -20,32 +20,33 @@ namespace CelesteLike
 
         public void LoadContent(ContentManager theContentManager)
         {
-            layerSwitchers = AddLayerSwitcherFromTileMap("TextFiles/test4L1_LayerSwitchers.csv");
-            foreach (var layerSwitcher in layerSwitchers)
+            coins = new List<Coin>();
+            AddObjectFromTileMap("TextFiles/test4_GameObjects.csv");
+
+            foreach (var coin in coins)
             {
-                layerSwitcher.LoadContent(theContentManager);
+                coin.LoadContent(theContentManager);
             }
         }
 
-        public void Update()
+        public void Update(GameTime theGameTime, Player player)
         {
-            foreach (var layerSwitcher in layerSwitchers)
+            foreach (var coin in coins)
             {
-                layerSwitcher.Update(1, 1, Rectangle.Empty);
+                coin.Update(theGameTime, player);
             }
         }
 
         public void Draw(SpriteBatch theSpriteBatch)
         {
-            foreach (var layerSwitcher in layerSwitchers)
+            foreach (var coin in coins)
             {
-                layerSwitcher.Draw(theSpriteBatch);
+                coin.Draw(theSpriteBatch);
             }
         }
 
-        private List<LayerSwitcher> AddLayerSwitcherFromTileMap(string fileName)
+        private void AddObjectFromTileMap(string fileName)
         {
-            List<LayerSwitcher> tempList = new List<LayerSwitcher>();
             string[] lines = File.ReadAllLines(fileName);
             var tempSplit = lines[0].Split(","); // splits the first line to figure out columns
             int count = 0;
@@ -56,23 +57,20 @@ namespace CelesteLike
                 for (int i = 0; i < split.Length; i++)
                 {
                     int value = Convert.ToInt32(split[i]);
-                    if (value == 1)
+                    if (value == 0)
                     {
-                        tempList.Add(new LayerSwitcher(LayerSwitcher.SwitchDirection.left,
-                            new Vector2(i * Tiles.TileWidth, count * Tiles.TileWidth), 16, 16));
-                    }
-                    else if (value == 2)
-                    {
-                        tempList.Add(new LayerSwitcher(LayerSwitcher.SwitchDirection.up,
-                            new Vector2(i * Tiles.TileWidth, count * Tiles.TileWidth), 16, 16));
+                        coins.Add(new Coin(new Vector2(i * Tiles.TileWidth, count * Tiles.TileWidth)));
                     }
                     //Debug.Write(array[count, i] + ",");
                 }
                 count += 1;
                 //Debug.WriteLine("\n");
             }
+        }
 
-            return tempList;
+        public void Reset()
+        {
+            foreach (var coin in coins) { coin.Reset(); }
         }
     }
 }

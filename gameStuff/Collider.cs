@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.ObjectiveC;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -129,6 +126,10 @@ namespace CelesteLike
                 F.position = new Vector2(objectPosition.X + objectWidth / 2, objectPosition.Y);
                 E.direction = Sensor.Direction.left;
                 F.direction = Sensor.Direction.right;
+
+                // Collision Box
+                collisionBox = new Rectangle((int)objectPosition.X - objectWidth / 2, (int)objectPosition.Y - objectHeight / 2
+                , objectWidth, objectHeight);
             }
             else if (mode == collisionMode.rightWall)
             {
@@ -143,6 +144,10 @@ namespace CelesteLike
                 F.position = new Vector2(objectPosition.X, objectPosition.Y + objectWidth / 2);
                 E.direction = Sensor.Direction.down;
                 F.direction = Sensor.Direction.up;
+
+                // Collision Box
+                new Rectangle((int)objectPosition.X - objectHeight / 2, (int)objectPosition.Y - objectWidth / 2
+                , objectHeight, objectWidth);
             }
             else if (mode == collisionMode.ceiling)
             {
@@ -157,6 +162,10 @@ namespace CelesteLike
                 F.position = new Vector2(objectPosition.X - objectWidth / 2, objectPosition.Y);
                 E.direction = Sensor.Direction.right;
                 F.direction = Sensor.Direction.left;
+
+                // Collision Box
+                collisionBox = new Rectangle((int)objectPosition.X - objectWidth / 2, (int)objectPosition.Y - objectHeight / 2
+                , objectWidth, objectHeight);
             }
             else if (mode == collisionMode.leftWall)
             {
@@ -171,6 +180,10 @@ namespace CelesteLike
                 F.position = new Vector2(objectPosition.X, objectPosition.Y + objectWidth / 2);
                 E.direction = Sensor.Direction.up;
                 F.direction = Sensor.Direction.down;
+
+                // Collision Box
+                new Rectangle((int)objectPosition.X - objectHeight / 2, (int)objectPosition.Y - objectWidth / 2
+                , objectHeight, objectWidth);
             }
         }
 
@@ -201,6 +214,11 @@ namespace CelesteLike
             }
 
             return 0;
+        }
+
+        public Rectangle GetCollisionBox()
+        {
+            return collisionBox;
         }
 
         // Gets the distance from the object to the floor
@@ -314,9 +332,9 @@ namespace CelesteLike
                 activeSensor.distanceCalculator();
             }
 
-            // if (winningSensor.angle < 70 && winningSensor.angle > 290)
+            if (activeSensor.angle < 70 && activeSensor.angle > 0 || activeSensor.angle > 290 && activeSensor.angle <= 360)
             {
-                // activeSensor.distance = 0;
+                 activeSensor.distance = 0;
             }
             Debug.WriteLine("E/F: {0}", activeSensor.distance);
 
@@ -393,6 +411,23 @@ namespace CelesteLike
             int[,] layerMap = Tiles.TileMapLS;
             int row = (int)(objectPosition.Y / tileWidth);
             int column = (int)(objectPosition.X / tileWidth);
+
+            if (row < 0) // Validation to prevent crashes
+            {
+                row = 0;
+            }
+            if (column < 0)
+            {
+                column = 0;
+            }
+            if (row >= layerMap.GetLength(0))
+            {
+                row = layerMap.GetLength(0) - 1;
+            }
+            if (column >= layerMap.GetLength(1))
+            {
+                column = layerMap.GetLength(1) - 1;
+            }
 
             if (layerMap[row, column] == 1)
             {
