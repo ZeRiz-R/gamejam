@@ -192,7 +192,7 @@ namespace CelesteLike
             // Adjusts the angles for flipped tiles
             if (hFlip && vFlip)
             {
-                angle = 180 + angle;
+                angle = (180 + angle) % 360;
             }
             else if (hFlip)
             {
@@ -200,7 +200,7 @@ namespace CelesteLike
             }
             else if (vFlip)
             {
-                angle = 180 - angle;
+                angle = (180 - angle) % 360;
             }
 
             return tileID;
