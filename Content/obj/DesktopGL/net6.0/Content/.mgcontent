@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SourceFileCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Profile>Reach</Profile>
+  <Platform>DesktopGL</Platform>
+  <Config />
+  <SourceFiles>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/../../../../../Downloads/Water.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/backButton.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/bigExplosion.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/blueSphere.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Bumper.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/bumper.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Bumper2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/button_press.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/buttontest.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/collect_coin.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/credits2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/earth2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/explosion.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Explosion2.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/layer1Visible.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/layer2Visible.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/level1Final.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/level1RealFinal.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/level1UltraFinal.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/level2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/level2Final.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/FinalLevel/levelImage.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/font.spritefont</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/instructionButton.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/instructions.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/layer1.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/layer2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/layerSwitch.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/menuScreen.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/menuScreen2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/nebulaGoal2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/newBlackT.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/newRedT.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/player_death.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/player_hurt.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/player_jump.wav</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/playGameButton.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/purpleNebula6.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/ratmouse3.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/redTriangle.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/redTriangle2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Spikes.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/splashScreen.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/test4.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/test4L1.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/test4L2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/test4LS.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/testmap.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/testMap2.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/theRat.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Title.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/triangles.png</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/Uppercut (Menu).mp3</File>
+    <File>C:/Users/wrizv/OneDrive/Documents/Visual Studio Projects/CelesteLike/Content/waterCollect2.png</File>
+  </SourceFiles>
+  <DestFiles>
+    <File>Water.png</File>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+  </DestFiles>
+</SourceFileCollection>
