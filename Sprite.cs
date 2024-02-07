@@ -118,6 +118,12 @@ namespace CelesteLike
             boundingBox.SetData(colours.ToArray());
         }
 
+        protected void UpdateCollisionBox()
+        {
+            collisionBox = new Rectangle((int)position.X - (objectWidth / 2), (int)position.Y - (objectHeight / 2),
+            objectWidth, objectHeight);
+        }
+
         public virtual void Update()
         {
             AlternateBox();

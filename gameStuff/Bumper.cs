@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CelesteLike.gameStuff
+namespace CelesteLike
 {
     internal class Bumper : AnimatedSprite
     {
@@ -15,13 +15,13 @@ namespace CelesteLike.gameStuff
         private int newSpeed;
         private bool bumperSoundLock = false;
 
-        public Bumper(Vector2 thePosition, int theDirection, int theNewSpeed
-            ) : base(assetName: "Bumper2", thePosition, width: 32, height: 9, frameWidth: 32, frameHeight: 32)
+        public Bumper(Vector2 thePosition)
+            : base(assetName: "Bumper2", thePosition, width: 32, height: 9, frameWidth: 32, frameHeight: 32)
         {
             origin = new Vector2(objectWidth / 2, frameHeight - (objectHeight / 2));
             collisionBox = new Rectangle((int)position.X - objectWidth / 2, (int)position.Y - objectHeight / 2, objectWidth, objectHeight);
-            direction = theDirection;
-            newSpeed = theNewSpeed;
+            direction = 0;
+            newSpeed = 10;
 
             threshold = 40;
             playAnimation = false;

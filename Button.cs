@@ -16,12 +16,12 @@ namespace CelesteLike
         float clickDelay; // How long until the button should be "clicked" (in ms)
         float timer = 0;
 
-        public Button(string assetName, Vector2 thePosition, int width, int height) : base(assetName, thePosition, width, height)
+        public Button(string assetName, Vector2 thePosition, int width, int height, bool backButton) : base(assetName, thePosition, width, height)
         {
             hovered = false;
             clicked = false;
-            backButton = false;
             startClick = false;
+            this.backButton = backButton;
             clickDelay = 0.2f;
         }
 
@@ -32,6 +32,10 @@ namespace CelesteLike
                 //colour = Color.LightGray; // Darken the button
                 scale = 1.1f;
                 colour = Color.Cyan;
+                if (backButton)
+                {
+                    colour = Color.Red;
+                }
             }
             else if (!clicked)
             {

@@ -1,4 +1,5 @@
-﻿using CelesteLike.gameStuff;
+﻿using CelesteLike.Content;
+using CelesteLike.gameStuff;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,8 +23,9 @@ namespace CelesteLike
         public static SplashScreen splashScreen { get; private set; }
         private Screen titleScreen;
         public static Screen menuScreen { get; private set; }
-        private Screen instructionsScreen;
+        public static Screen instructionsScreen;
         public static Screen gameScreen { get; private set; }
+        public static Screen creditsScreen { get; private set; }
 
         private Sprite redTriangle;
         private Sprite blackTriangle;
@@ -37,13 +39,16 @@ namespace CelesteLike
             splashScreen = new SplashScreen();
             titleScreen = new Screen();
             menuScreen = new MenuScreen();
-            instructionsScreen = new Screen();
+            instructionsScreen = new InstructionScreen();
             gameScreen = new GameScreen();
+            creditsScreen = new CreditsScreen();
 
             allScreens = new List<Screen>();
             allScreens.Add(splashScreen);
             allScreens.Add(menuScreen);
             allScreens.Add(gameScreen);
+            allScreens.Add(creditsScreen);
+            allScreens.Add(instructionsScreen);
 
             redTriangle = new Sprite("newRedT", new Vector2(-480, -20), 960, 68);
             blackTriangle = new Sprite("newBlackT", new Vector2(312, 0), 168, 552);

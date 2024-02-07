@@ -31,7 +31,7 @@ namespace CelesteLike
             _graphics.PreferredBackBufferHeight = 1080;
             mouseState = Mouse.GetState();
             prevMouseState = mouseState;
-            //_graphics.IsFullScreen = true;
+            _graphics.IsFullScreen = true;
 
             //theGameManager = new GameManager();
             //theGameManager.Initialise();

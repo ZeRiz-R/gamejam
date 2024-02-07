@@ -332,7 +332,7 @@ namespace CelesteLike
                 activeSensor.distanceCalculator();
             }
 
-            if (activeSensor.angle < 70 && activeSensor.angle > 0 || activeSensor.angle > 290 && activeSensor.angle <= 360)
+            if (activeSensor.angle != 0 && activeSensor.angle != 360)
             {
                  activeSensor.distance = 0;
             }
@@ -429,7 +429,7 @@ namespace CelesteLike
                 column = layerMap.GetLength(1) - 1;
             }
 
-            if (layerMap[row, column] == 1)
+            if (layerMap[row, column] == 1) // 2 to 1 horiz
             {
                 if (objectSpeed.X > 0)
                 {
@@ -440,7 +440,7 @@ namespace CelesteLike
                     activeTileMap = Tiles.TileMapL2;
                 }
             }
-            else if (layerMap[row,column] == 2)
+            else if (layerMap[row,column] == 2) // 2 to 1 vert
             {
                 if (objectSpeed.Y > 0)
                 {
@@ -451,7 +451,63 @@ namespace CelesteLike
                     activeTileMap = Tiles.TileMapL2;
                 }
             }
-             
+            else if (layerMap[row, column] == 0) // 1 to 2 horiz
+            {
+                if (objectSpeed.X > 0)
+                {
+                    activeTileMap = Tiles.TileMapL2;
+                }
+                else if (objectSpeed.X < 0)
+                {
+                    activeTileMap = Tiles.TileMapL1;
+                }
+            }
+            else if (layerMap[row, column] == 3) // 1 to 2 vert
+            {
+                if (objectSpeed.Y > 0)
+                {
+                    activeTileMap = Tiles.TileMapL2;
+                }
+                else if (objectSpeed.Y < 0)
+                {
+                    activeTileMap = Tiles.TileMapL1;
+                }
+            }
+            else if (layerMap[row, column] == 4) // Always 1
+            {
+                activeTileMap = Tiles.TileMapL1;
+            }
+
+
+        }
+
+        public bool CheckKillPlane(Vector2 objectPosition)
+        {
+            int row = (int)(objectPosition.Y / tileWidth);
+            int column = (int)(objectPosition.X / tileWidth);
+
+            if (row < 0) // Validation to prevent crashes
+            {
+                row = 0;
+            }
+            if (column < 0)
+            {
+                column = 0;
+            }
+            if (row >= activeTileMap.GetLength(0))
+            {
+                row = activeTileMap.GetLength(0) - 1;
+            }
+            if (column >= activeTileMap.GetLength(1))
+            {
+                column = activeTileMap.GetLength(1) - 1;
+            }
+
+            if (activeTileMap[row, column] == 2) // Kill Plane
+            {
+                return true;
+            }
+            return false;
         }
 
         public Sensor.Direction getFloorSensorDirection()
@@ -465,6 +521,11 @@ namespace CelesteLike
         public Sensor.Direction getCeilingSensorDirection()
         {
             return C.direction;
+        }
+
+        public void Reset()
+        {
+            activeTileMap = Tiles.TileMapL1;
         }
 
         //TESTING

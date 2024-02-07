@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Mime;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -57,11 +58,12 @@ namespace CelesteLike
         private const float normalSLOPE = 0.125f, rollUPSLOPE = 0.078f, rollDOWNSLOPE = 0.312f;
         private const float BOUNCE = 0.674f;
 
-        private int numCoins = 0;
+        private float numCoins = 0;
 
         private float tempAngle;
         private float distanceToTile;
         private float effectTimer = 0; // Allows effects to last more than a frame
+        private float time = 80;
 
         // SOUNDLOCKS
         private bool hurtsoundLock = false;
@@ -94,10 +96,10 @@ namespace CelesteLike
 
         // VISUAL EFFECTS
         VisualEffect explosion;
-
+        Vector2 startPos = new Vector2(590, 290);
         public Player(string newAssetName, Vector2 thePosition, int width, int height) : base(newAssetName, thePosition, width, height)
         {
-            position = new Vector2(327, 100);
+            position = startPos;
             objectWidth = width;
             objectHeight = height;
             collisionDetector = new Collider();
@@ -129,9 +131,9 @@ namespace CelesteLike
                         UpdateInput(); // Detects user inputs and updates variables accordingly
                         //groundSpeed = -2f;
                         UpdateMovement(); // Deals with the inputs regarding movement
-                        //UpdateFlame();
                         AngledSpeed();
                         UpdateJump();
+                        UpdateFlame();
                         SlipAndFall();
                     }
                     else
@@ -143,9 +145,9 @@ namespace CelesteLike
                     stepX = stepSpeed(xSpeed);
                     stepY = stepSpeed(ySpeed);
 
-                    // for (int i = 0; i < 3 ; i++)
+                     for (int i = 0; i < 3 ; i++)
                     {
-                        newPosition = new Vector2(position.X + xSpeed, position.Y + ySpeed);
+                        newPosition = new Vector2(position.X + stepX, position.Y + stepY);
                         if (state == playerState.grounded)
                         {
                             groundedCollisions();
@@ -158,6 +160,18 @@ namespace CelesteLike
 
 
                         position = newPosition; // Update the position to the corrected new position
+                    }
+
+                    if (collisionDetector.CheckKillPlane(position))
+                    {
+                        KillPlayer();
+                    }
+
+                    time -= (float)theGameTime.ElapsedGameTime.TotalSeconds;
+                    if (time < 0)
+                    {
+                        time = 0;
+                        KillPlayer();
                     }
 
                 }
@@ -210,14 +224,17 @@ namespace CelesteLike
                 {
                     xSpeed *= -BOUNCE;
                     //xSpeed = 0;
+                    stepX = 0;
+                    controlLockTimer = 5;
                 }
                 else
                 {
                     groundSpeed *= -BOUNCE;
                     //groundSpeed = 0;
                     //xSpeed = 0;
+                    stepX = 0;
+                    controlLockTimer = 5;
                 }
-                controlLockTimer = 5;
             }
         }
 
@@ -227,6 +244,7 @@ namespace CelesteLike
             distanceToTile = collisionDetector.floorCollision(); // Gets the distance to the surface 
             tempAngle = collisionDetector.getFinalAngle(); // Gets the angle of the new surface
 
+            float prevAngle = currentAngle;
             // // An angle of 360 is flagged. This snaps the angle to the closest 90. Used to allow a full tile to be walked on from all sides
             if (tempAngle == 360)
             {
@@ -248,17 +266,22 @@ namespace CelesteLike
                     LandingSpeed();
                 }
             }
-            else if (distanceToTile >= 0 && distanceToTile <= 14) // If the player is above the ground
+            else if (distanceToTile >= 0 && distanceToTile <= 10) // If the player is above the ground
             {
-                if (state == playerState.grounded) // If the player is supposed to be on the ground
-                {
-                    AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
-                }
+                    if (state == playerState.grounded) // If the player is supposed to be on the ground
+                    {
+                            AddDistance(distanceToTile, collisionDetector.getFloorSensorDirection());
+                    }
+                    else
+                    {
+                        state = playerState.airborne;
+                    }
             }
-            else if (distanceToTile > 14) // If the player is far enough away from a tile, make them airborne
+            else if (distanceToTile > 10) // If the player is far enough away from a tile, make them airborne
             {
                 state = playerState.airborne;
                 currentAngle = 0;
+                controlLockTimer = 2;
             }
         }
 
@@ -594,19 +617,38 @@ namespace CelesteLike
 
         }
 
+        private bool dashSoundLock = false;
         private const float FLAMETOP = TOP + 2;
         private void UpdateFlame()
         {
             if (tryFlame)
             {
                 int direction;
+                if (goRight)
+                {
+                    direction = 1;
+                }
+                if (goLeft)
+                {
+                    direction = -1;
+                }
+                else
+                {
+                    if (state == playerState.airborne)
+                    {
+                        direction = Math.Sign(xSpeed);
+                    }
+                    else
+                    {
+                        direction = Math.Sign(groundSpeed);
+                    }
+                }
                 if (numCoins > 20) // If there are enough coins to start flaming
                 {
                     if (specialState == SpecialState.flaming) // If already flaming
                     {
                         if (state == playerState.airborne) // If in air
                         {
-                            direction = Math.Sign(xSpeed);
                             if (Math.Abs(xSpeed) < FLAMETOP)
                             {
                                 xSpeed = (FLAMETOP) * direction;
@@ -614,19 +656,17 @@ namespace CelesteLike
                         }
                         else
                         {
-                            direction = Math.Sign(groundSpeed);
                             if (Math.Abs(groundSpeed) < FLAMETOP)
                             {
                                 groundSpeed = (FLAMETOP) * direction;
                             }
                         }
-                        numCoins -= 1;
+                        numCoins -= 0.3f;
                     }
                     else // If not yet flaming
                     {
                         if (state == playerState.airborne) // If in air
                         {
-                            direction = Math.Sign(xSpeed);
                             if (Math.Abs(xSpeed) < FLAMETOP)
                             {
                                 xSpeed = (FLAMETOP) * direction;
@@ -638,20 +678,26 @@ namespace CelesteLike
                         }
                         else
                         {
-                            direction = Math.Sign(groundSpeed);
                             if (Math.Abs(groundSpeed) < FLAMETOP)
                             {
                                 groundSpeed = (FLAMETOP) * direction;
                             }
                         }
-                        numCoins -= 2;
+                        numCoins -= 15;
+                        SoundBank.player_dash.PlayEndSound();
                     }
+                    colour = Color.Crimson;
+                    effectTimer = 8;
                     specialState = SpecialState.flaming;
                 }
                 else
                 {
                     specialState = SpecialState.none;
                 }
+            }
+            else
+            {
+                specialState = SpecialState.none;
             }
         }
 
@@ -678,6 +724,11 @@ namespace CelesteLike
             if (Math.Abs(groundSpeed) < 0.001f)
             {
                 groundSpeed = 0;
+            }
+
+            if (Math.Abs(groundSpeed) > 12)
+            {
+                groundSpeed = 12 * Math.Sign(groundSpeed);
             }
         }
 
@@ -898,9 +949,8 @@ namespace CelesteLike
 
         public void Reset()
         {
-            position = new Vector2(300, 100);
+            position = startPos;
             show = true;
-            dead = false;
             specialState = SpecialState.none;
             groundSpeed = 0;
             xSpeed = 0;
@@ -908,7 +958,11 @@ namespace CelesteLike
             currentAngle = 0;
             numCoins = 0;
             goalReached = false;
+            time = 80;
+            UpdateCollisionBox();
+            dead = false;
 
+            collisionDetector.Reset();
             explosion.Reset();
         }
 
@@ -964,10 +1018,11 @@ namespace CelesteLike
 
         public void UIDisplay(SpriteBatch theSpriteBatch, SpriteFont font)
         {
-            float[] variableList = new float[] { numCoins };
-            string[] variableNames = new string[] { "Ozone: " };
+            int roundTime = (int)time;
+            float[] variableList = new float[] { roundTime, (int)numCoins };
+            string[] variableNames = new string[] { "Time: ", "Ozone: " };
 
-            Vector2 textPosition = new Vector2(380, 0);
+            Vector2 textPosition = new Vector2(32, 32);
 
             for (int i = 0; i < variableNames.Length; i++)
             {

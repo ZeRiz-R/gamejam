@@ -44,9 +44,10 @@ namespace CelesteLike
 
         public Tiles()
         {
-            layer1 = new Sprite("test4L1", Vector2.Zero, 0, 0);
-            layer2 = new Sprite("test4L2", Vector2.Zero, 0, 0);
-            FillArrays("TextFiles/test4_Layer1.csv", "TextFiles/test4_Layer2.csv", "TextFiles/test4_LayerSwitchers.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
+            layer1 = new Sprite("FinalLevel/level1UltraFinal", Vector2.Zero, 0, 0);
+            layer2 = new Sprite("FinalLevel/level2Final", Vector2.Zero, 0, 0);
+            FillArrays("TextFiles/FinalLevel/Level_Layer1.csv", "TextFiles/FinalLevel/Level_Layer2.csv",
+                "TextFiles/FinalLevel/Level_LayerSwitcher.csv", "TextFiles/heightArray.txt", "TextFiles/widthArray.txt",
                 "TextFiles/angleArray.txt");
         }
 
@@ -93,6 +94,30 @@ namespace CelesteLike
             return array;
         }
 
+        private int[,] ReadToLSArray(string fileName)
+        {
+            string[] lines = File.ReadAllLines(fileName);
+            var tempSplit = lines[0].Split(","); // splits the first line to figure out columns
+            int[,] array = new int[lines.Length, tempSplit.Length];
+            int count = 0;
+
+            foreach (var line in lines)
+            {
+                var split = line.Split(",");
+                for (int i = 0; i < split.Length; i++)
+                {
+                    array[count, i] = Convert.ToInt32(split[i]);
+
+                    //Debug.Write(array[count, i] + ",");
+                }
+                count += 1;
+                //Debug.WriteLine("\n");
+            }
+
+            return array;
+        }
+
+
         private int[,] FillWidthArray(int[,] heightArray)
         {
             int[,] array = new int[heightArray.GetLength(0), heightArray.GetLength(1)];
@@ -126,7 +151,7 @@ namespace CelesteLike
         {
             tileMapL1 = ReadTo2DArray(tileMapL1Name);
             tileMapL2 = ReadTo2DArray(tileMapL2Name);
-            tileMapLS = ReadTo2DArray(tileMapLSName);
+            tileMapLS = ReadToLSArray(tileMapLSName);
             heightArray = ReadTo2DArray(heightArrayName);
             widthArray = FillWidthArray(heightArray);
 

@@ -12,7 +12,7 @@ namespace CelesteLike
     {
         private static List<Sound> sounds;
         public static Sound button_press; // Menu
-        public static Sound player_jump, player_hurt, player_death; // Player
+        public static Sound player_jump, player_hurt, player_death, player_dash; // Player
         public static Sound collect_coin; // Coin
         public static Sound bumper; // Bumper
 
@@ -25,6 +25,7 @@ namespace CelesteLike
             player_death = new Sound("player_death", ref sounds);
             collect_coin = new Sound("collect_coin", ref sounds);
             bumper = new Sound("bumper", ref sounds);
+            player_dash = new Sound("Explosion2", ref sounds);
 
             foreach (Sound sound in sounds)
             {

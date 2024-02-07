@@ -44,7 +44,7 @@ namespace CelesteLike
         {
             if (theGameManager.levelComplete == true)
             {
-                nextScreen = ScreenManager.menuScreen;
+                nextScreen = ScreenManager.creditsScreen;
                 theGameManager.Reset();
             }
         }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CelesteLike.gameStuff
+namespace CelesteLike
 {
     internal class Spikes : Sprite
     {

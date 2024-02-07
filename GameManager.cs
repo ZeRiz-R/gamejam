@@ -26,11 +26,7 @@ namespace CelesteLike
 
         // TESTS
         private Sprite bg = new Sprite("purpleNebula6", new Vector2(0, 0), 512, 512);
-
-        private Coin coin1 = new Coin(new Vector2(400, 100));
-        private Bumper bumper = new Bumper(new Vector2(400, 200), 0, 10);
-        private Spikes spike = new Spikes(new Vector2(240, 150));
-        private Goal goal = new Goal(new Vector2(800, 400));
+        private Goal goal = new Goal(new Vector2(5856, 1450));
 
         public bool levelComplete { get; private set; }
 
@@ -50,9 +46,6 @@ namespace CelesteLike
 
             theObjectManager.LoadContent(theContentManager);
             //TESTS
-            coin1.LoadContent(theContentManager);
-            bumper.LoadContent(theContentManager);
-            spike.LoadContent(theContentManager);
             goal.LoadContent(theContentManager);
             bg.LoadContent(theContentManager);
             bg.scale = 1.0f;
@@ -68,9 +61,6 @@ namespace CelesteLike
             ball.Update(theGameTime);
             camera.Follow2(ball);
             //TEST
-            bumper.Update(theGameTime, ball);
-            coin1.Update(theGameTime, ball);
-            spike.Update(ball);
             goal.Update(theGameTime, ball);
 
             LevelCompleteCheck();
@@ -85,21 +75,22 @@ namespace CelesteLike
 
             graphicsDevice.Clear(Color.CornflowerBlue);
 
-            //Draw here
-            theSpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
+            theSpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null);
             bg.Draw(theSpriteBatch);
-            level.DrawLayer1(theSpriteBatch);
+            theSpriteBatch.End();
+
+            //Draw here
+
+            theSpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
+            level.DrawLayer2(theSpriteBatch);
             theObjectManager.Draw(theSpriteBatch);
-            coin1.Draw(theSpriteBatch);
-            bumper.Draw(theSpriteBatch);
-            spike.Draw(theSpriteBatch);
             goal.Draw(theSpriteBatch);
             ball.Draw(theSpriteBatch);
-            level.DrawLayer2(theSpriteBatch);
+            level.DrawLayer1(theSpriteBatch);
             theSpriteBatch.End();
 
             theSpriteBatch.Begin();
-            ball.VariableDisplay(theSpriteBatch, Game1.font);
+            //ball.VariableDisplay(theSpriteBatch, Game1.font);
             ball.UIDisplay(theSpriteBatch, Game1.font);
             theSpriteBatch.End();
 

@@ -15,13 +15,16 @@ namespace CelesteLike
         private float bgSpeed = 1;
         private Sprite title;
         private Button playGame;
+        private Button instructions;
 
         public MenuScreen()
         {
             background = new Sprite("menuScreen2", bgStart, 960, 544);
             title = new Sprite("Title", new Vector2(20, 70), 218, 96);
-            playGame = new Button("playGameButton", new Vector2(170, 210), 120, 13);
+            playGame = new Button("playGameButton", new Vector2(140, 210), 120, 13, false);
+            instructions = new Button("instructionButton", new Vector2(140, 230), 157, 13, false);
             buttons.Add(playGame);
+            buttons.Add(instructions);
         }
 
         public override void LoadContent(ContentManager theContentManager)
@@ -40,6 +43,10 @@ namespace CelesteLike
             {
                 nextScreen = ScreenManager.gameScreen;
             }
+            if (instructions.clicked == true)
+            {
+                nextScreen = ScreenManager.instructionsScreen;
+            }
         }
 
         public override void Draw(SpriteBatch theSpriteBatch)
@@ -57,6 +64,12 @@ namespace CelesteLike
                 background.position.X = bgStart.X;
                 background.position.Y = bgStart.Y;
             }
+        }
+
+        public void Sleep()
+        {
+            nextScreen = null;
+            background.position = bgStart;
         }
 
         public void StartWakeUp()
