@@ -6,3 +6,6 @@ Watch a showcase of the game by clicking the image below!
 
 ## Sensors
 ![Sensor Diagram](showcase/sensors.png)
+
+## Collision Modes
+![Collision Modes](showcase/collisionModes.png)
